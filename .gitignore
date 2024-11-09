@@ -1,32 +1,86 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
+# General build files
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
+*.exe
+*.out
 *.a
 *.lib
 
-# Executables
-*.exe
-*.out
-*.app
+# Build directories
+/build/
+*/build/
+*/bin/
+*/Debug/
+*/Release/
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# IDE-specific files
+.idea/
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Visual Studio
+*.vcxproj*
+*.sln
+*.user
+*.opensdf
+*.sdf
+*.vcxproj.filters
+*.ipch
+.vs/
+
+# CLion
+.cmake/
+*.iml
+
+# OpenGL Libraries (customize as needed)
+vendor/glew/
+vendor/glfw/
+vendor/glm/
+
+# Logs, temp, and custom build files
+*.log
+*.tmp
+*.temp
+*.recipe
+*.tlog
+*.rsp  # Response files
+*.lastbuildstate
+*.pch  # Precompiled header files
+
+# Specific for Visual Studio's intermediate files
+*.idb
+*.pdb
+
+# Additional output files (if applicable)
+*.ilk
+*.exp
+*.map
+*.manifest
+*.appx
+
+# Custom folders
+output/
+logs/
+temp/
+
+# Exclude other non-source files
+*.bak
+*.swp
+*.swo
