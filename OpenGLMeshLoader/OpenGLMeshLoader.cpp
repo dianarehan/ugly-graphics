@@ -42,6 +42,12 @@ int cameraZoom = 0;
 // Model Variables
 Model_3DS model_house;
 Model_3DS model_tree;
+Model_3DS model_car;
+Model_3DS model_sign_stop;
+Model_3DS model_sign_direction;
+Model_3DS model_sign_oneway;
+Model_3DS model_sign_pedistrian;
+Model_3DS model_tank;
 
 // Textures
 GLTexture tex_ground;
@@ -180,22 +186,62 @@ void myDisplay(void)
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
-	// Draw Ground
+	// ground
 	RenderGround();
 
-	// Draw Tree Model
+	// tree model
 	glPushMatrix();
 	glTranslatef(10, 0, 0);
 	glScalef(0.7, 0.7, 0.7);
 	model_tree.Draw();
 	glPopMatrix();
 
-	// Draw house Model
+	// house model
 	glPushMatrix();
 	glRotatef(90.f, 1, 0, 0);
 	model_house.Draw();
 	glPopMatrix();
 
+	// car model
+	glPushMatrix();
+	glRotatef(90.f, 0, 1, 0);
+	glScalef(3.5f, 3.5f, 3.5f);
+	model_car.Draw();
+	glPopMatrix();
+
+	// stop sign model
+	glPushMatrix();
+	glScalef(0.1f,0.1f,0.1f);
+	model_sign_stop.Draw();
+	glPopMatrix();
+
+	// direction sign model
+	glPushMatrix();
+	glScalef(0.1f, 0.1f, 0.1f);
+	glTranslatef(150, 20, 2);
+	model_sign_direction.Draw();
+	glPopMatrix();
+
+	// oneway sign model
+	glPushMatrix();
+	glScalef(0.1f, 0.1f, 0.1f);
+	glTranslatef(150, 0, 10);
+	model_sign_oneway.Draw();
+	glPopMatrix();
+	
+	// pedistrian sign model
+	glPushMatrix();
+	glScalef(0.1f, 0.1f, 0.1f);
+	glTranslatef(-50, 0, 10);
+	model_sign_pedistrian.Draw();
+	glPopMatrix();
+
+	// tank model
+	glPushMatrix();
+	glScalef(0.07f,0.07f,0.07f);
+	glTranslatef(0, 0, 0);
+	model_tank.Draw();
+	glPopMatrix();
 
 	//sky box
 	glPushMatrix();
@@ -315,9 +361,17 @@ void myReshape(int w, int h)
 //=======================================================================
 void LoadAssets()
 {
+	RenderGround();
+
 	// Loading Model files
-	model_house.Load("Models/house/house.3DS");
+	model_house.Load("Models/house/house.3ds");
 	model_tree.Load("Models/tree/Tree1.3ds");
+	model_car.Load("Models/car/Car.3ds");
+	model_sign_stop.Load("Models/road-signs/neuro_stop_3ds.3ds");
+	model_sign_direction.Load("Models/road-signs/neuro_direction_3ds.3ds");
+	model_sign_oneway.Load("Models/road-signs/neuro_oneway_3ds.3ds");
+	model_sign_pedistrian.Load("Models/road-signs/neuro_pedestrian_3ds.3ds");
+	model_tank.Load("Models/tank/gasContain.3ds");
 
 	// Loading texture files
 	tex_ground.Load("Textures/ground.bmp");
