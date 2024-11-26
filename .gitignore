@@ -35,9 +35,8 @@ compile_commands.json
 Thumbs.db
 desktop.ini
 
-# Visual Studio
-*.vcxproj*
-*.sln
+
+
 *.user
 *.opensdf
 *.sdf
