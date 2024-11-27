@@ -43,6 +43,7 @@ int cameraZoom = 0;
 Model_3DS model_house;
 Model_3DS model_tree;
 Model_3DS model_car;
+Model_3DS model_pizza;
 Model_3DS model_sign_stop;
 Model_3DS model_sign_direction;
 Model_3DS model_sign_oneway;
@@ -202,6 +203,13 @@ void myDisplay(void)
 	model_house.Draw();
 	glPopMatrix();
 
+	// pizza
+	glPushMatrix();
+	glRotatef(90.f, 1, 0, 0);
+	glScalef(0.02, 0.02, 0.02);
+	model_pizza.Draw();
+	glPopMatrix();
+
 	// car model
 	glPushMatrix();
 	glRotatef(90.f, 0, 1, 0);
@@ -211,7 +219,7 @@ void myDisplay(void)
 
 	// stop sign model
 	glPushMatrix();
-	glScalef(0.1f,0.1f,0.1f);
+	glScalef(0.1f, 0.1f, 0.1f);
 	model_sign_stop.Draw();
 	glPopMatrix();
 
@@ -228,7 +236,7 @@ void myDisplay(void)
 	glTranslatef(150, 0, 10);
 	model_sign_oneway.Draw();
 	glPopMatrix();
-	
+
 	// pedistrian sign model
 	glPushMatrix();
 	glScalef(0.1f, 0.1f, 0.1f);
@@ -238,7 +246,7 @@ void myDisplay(void)
 
 	// tank model
 	glPushMatrix();
-	glScalef(0.07f,0.07f,0.07f);
+	glScalef(0.07f, 0.07f, 0.07f);
 	glTranslatef(0, 0, 0);
 	model_tank.Draw();
 	glPopMatrix();
@@ -367,6 +375,7 @@ void LoadAssets()
 	model_house.Load("Models/house/house.3ds");
 	model_tree.Load("Models/tree/Tree1.3ds");
 	model_car.Load("Models/car/Car.3ds");
+	model_pizza.Load("Models/dominos/Models/Pizza.3ds");
 	model_sign_stop.Load("Models/road-signs/neuro_stop_3ds.3ds");
 	model_sign_direction.Load("Models/road-signs/neuro_direction_3ds.3ds");
 	model_sign_oneway.Load("Models/road-signs/neuro_oneway_3ds.3ds");
