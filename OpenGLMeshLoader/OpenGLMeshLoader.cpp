@@ -78,6 +78,8 @@ Model_3DS model_sign_direction;
 Model_3DS model_sign_oneway;
 Model_3DS model_sign_pedistrian;
 Model_3DS model_tank;
+Model_3DS model_building;
+Model_3DS model_building2;
 #pragma endregion
 
 //textures
@@ -176,6 +178,11 @@ void myDisplay(void)
 
 	// tank model
 	DrawModel(model_tank, Vector(10, 0, 10), Vector(0.07, 0.07, 0.07), Vector(0, 0, 0));
+	
+	// building model, no errors but it is not visible for some unknown reason
+	DrawModel(model_building, Vector(0, 0, 10), Vector(100, 100, 100), Vector(0, 0, 0));
+
+	DrawModel(model_building2, Vector(0, 0, 10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
 
 	//sky box
 	DrawSkyBox();
@@ -375,6 +382,9 @@ void LoadAssets()
 	model_sign_oneway.Load("Models/road-signs/neuro_oneway_3ds.3ds");
 	model_sign_pedistrian.Load("Models/road-signs/neuro_pedestrian_3ds.3ds");
 	model_tank.Load("Models/tank/gasContain.3ds");
+	model_building.Load("Models/building/Building_italian.3ds");
+	model_building2.Load("Models/building2/Building.3DS");
+
 
 	// Loading texture files
 	tex_ground.Load("Textures/ground.bmp");
