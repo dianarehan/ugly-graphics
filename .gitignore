@@ -9,6 +9,15 @@
 *.a
 *.lib
 OpenGLMeshLoader/.vs/
+# Ignore Visual Studio temporary files and folders
+*.user
+*.suo
+*.exe
+*.pdb
+*.opendb
+.vs/
+Debug/
+Release/
 
 # Build directories
 /build/
