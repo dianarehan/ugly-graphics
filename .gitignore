@@ -8,6 +8,7 @@
 *.out
 *.a
 *.lib
+OpenGLMeshLoader/.vs/
 
 # Build directories
 /build/
