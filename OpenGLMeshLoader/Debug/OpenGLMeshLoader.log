@@ -1,9 +1,0 @@
-﻿  OpenGLMeshLoader.cpp
-C:\Users\nabil\ugly-graphics\OpenGLMeshLoader\TextureBuilder.h(27,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-  (compiling source file 'OpenGLMeshLoader.cpp')
-  
-C:\Users\nabil\ugly-graphics\OpenGLMeshLoader\TextureBuilder.h(28,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-  (compiling source file 'OpenGLMeshLoader.cpp')
-  
-GLTexture.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/INCREMENTAL:NO' specification
-  OpenGLMeshLoader.vcxproj -> C:\Users\nabil\ugly-graphics\OpenGLMeshLoader\Debug\OpenGLMeshLoader19.exe
