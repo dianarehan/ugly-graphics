@@ -13,28 +13,6 @@
 #include <sstream>
 using namespace irrklang;
 
-//frame Settings
-int xCord = 1280;
-int yCord = 720;
-
-//game data
-#pragma region
-char title[] = "Car Game";
-int scoreScene1 = 0;
-int scoreScene2 = 0;
-const int maxScore = 15;
-int lives = 5;
-bool winGame = false;
-#pragma endregion
-
-//Camera Settings
-#pragma region 
-GLdouble fovy = 45.0;
-GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
-GLdouble zNear = 0.1;
-GLdouble zFar = 100.0;
-#pragma endregion
-
 #pragma region
 class Vector
 {
@@ -53,8 +31,36 @@ public:
 		z += value;
 	}
 };
+#pragma endregion
 
-Vector Eye(20, 5, 20);
+//frame Settings
+int xCord = 1280;
+int yCord = 720;
+
+//game data
+#pragma region
+char title[] = "Car Game";
+int scoreScene1 = 0;
+int scoreScene2 = 0;
+const int maxScore = 15;
+int lives = 5;
+bool winGame = false;
+enum CurrScene { scene1, scene2 };
+CurrScene currentScene = scene1;
+enum CameraMode { firstPerson, thirdPerson };
+CameraMode cameraMode = thirdPerson;
+#pragma endregion
+
+//Camera Settings
+#pragma region 
+GLdouble fovy = 45.0;
+GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
+GLdouble zNear = 0.01;
+GLdouble zFar = 1000.0;
+float camX = 0.0;
+float camY = 7.0; //lw 3ayez aknak btbos odam decrease this val, lw aknek btwaty rasek increase this val
+float camZ = 30.0;
+Vector Eye(camX, camY, camZ);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
 #pragma endregion
@@ -99,6 +105,8 @@ void EnableOpenGLFeatures();
 void RegisterCallbacks();
 void playSound(const char* soundFile, bool loop);
 void Render2DText(int score, bool gameWin, bool gameLose);
+void DrawSkyBox();
+void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation);
 #pragma endregion
 
 void RenderGround()
@@ -143,79 +151,41 @@ void myDisplay(void)
 	RenderGround();
 
 	// tree model
-	glPushMatrix();
-	glTranslatef(10, 0, 0);
-	glScalef(0.7, 0.7, 0.7);
-	model_tree.Draw();
-	glPopMatrix();
+	DrawModel(model_tree, Vector(10, 0, 0), Vector(0.7, 0.7, 0.7),Vector(0,0,0));
 
 	// house model
-	glPushMatrix();
-	glRotatef(90.f, 1, 0, 0);
-	model_house.Draw();
-	glPopMatrix();
+	DrawModel(model_house, Vector(0, 0, 0), Vector(1, 1, 1), Vector(90, 0, 0));
 
 	// pizza
-	glPushMatrix();
-	glRotatef(90.f, 1, 0, 0);
-	glScalef(0.02, 0.02, 0.02);
-	model_pizza.Draw();
-	glPopMatrix();
+	DrawModel(model_pizza, Vector(10, 10, 10), Vector(0.008, 0.008, 0.008), Vector(0, 0, -90));
 
 	// car model
-	glPushMatrix();
-	glRotatef(90.f, 0, 1, 0);
-	glScalef(3.5f, 3.5f, 3.5f);
-	model_car.Draw();
-	glPopMatrix();
+	DrawModel(model_car, Vector(0, 0, 0), Vector(3.5f, 3.5f, 3.5f), Vector(0, 90, 0));
 
 	// stop sign model
-	glPushMatrix();
-	glScalef(0.1f, 0.1f, 0.1f);
-	model_sign_stop.Draw();
-	glPopMatrix();
+	DrawModel(model_sign_stop, Vector(0, 0, 0), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
 
 	// direction sign model
-	glPushMatrix();
-	glScalef(0.1f, 0.1f, 0.1f);
-	glTranslatef(150, 20, 2);
-	model_sign_direction.Draw();
-	glPopMatrix();
+	DrawModel(model_sign_direction, Vector(10, 5, 2), Vector(0.1, 0.1, 0.1), Vector(0, 90, 0));
 
 	// oneway sign model
-	glPushMatrix();
-	glScalef(0.1f, 0.1f, 0.1f);
-	glTranslatef(150, 0, 10);
-	model_sign_oneway.Draw();
-	glPopMatrix();
+	DrawModel(model_sign_oneway, Vector(10, 0, 10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
 
 	// pedistrian sign model
-	glPushMatrix();
-	glScalef(0.1f, 0.1f, 0.1f);
-	glTranslatef(-50, 0, 10);
-	model_sign_pedistrian.Draw();
-	glPopMatrix();
+	DrawModel(model_sign_pedistrian, Vector(12, 0, 7), Vector(0.1, 0.1, 0.1), Vector(0, 45, 0));
 
 	// tank model
-	glPushMatrix();
-	glScalef(0.07f, 0.07f, 0.07f);
-	glTranslatef(0, 0, 0);
-	model_tank.Draw();
-	glPopMatrix();
+	DrawModel(model_tank, Vector(10, 0, 10), Vector(0.07, 0.07, 0.07), Vector(0, 0, 0));
 
 	//sky box
-	glPushMatrix();
-	GLUquadricObj* qobj;
-	qobj = gluNewQuadric();
-	glTranslated(50, 0, 0);
-	glRotated(90, 1, 0, 1);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	gluQuadricTexture(qobj, true);
-	gluQuadricNormals(qobj, GL_SMOOTH);
-	gluSphere(qobj, 100, 100, 100);
-	gluDeleteQuadric(qobj);
-	glPopMatrix();
+	DrawSkyBox();
 
+	if (currentScene == scene1) {
+		Render2DText(scoreScene1, false, false);
+	}
+	else if (currentScene == scene2) {
+		Render2DText(scoreScene2, false, false);
+	}
 	glutSwapBuffers();
 }
 
@@ -416,7 +386,7 @@ void InitializeGLUT(int argc, char** argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(xCord, yCord);
-	glutInitWindowPosition(100, 150);
+	glutInitWindowPosition(100, 80);
 	glutCreateWindow(title);
 }
 
@@ -495,4 +465,30 @@ void Render2DText(int score, bool gameWin, bool gameLose) {
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 
+}
+
+void DrawSkyBox() {
+	glPushMatrix();
+	GLUquadricObj* qobj;
+	qobj = gluNewQuadric();
+	glTranslated(50, 0, 0);
+	glRotated(90, 1, 0, 1);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	gluQuadricTexture(qobj, true);
+	gluQuadricNormals(qobj, GL_SMOOTH);
+	gluSphere(qobj, 500, 100, 100);
+	gluDeleteQuadric(qobj);
+	glPopMatrix();
+}
+
+void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation)
+{
+	glPushMatrix();
+	glTranslatef(position.x, position.y, position.z); // Translate first
+	glRotatef(rotation.x, 1.0f, 0.0f, 0.0f);         // Rotate second
+	glRotatef(rotation.y, 0.0f, 1.0f, 0.0f);
+	glRotatef(rotation.z, 0.0f, 0.0f, 1.0f);
+	glScalef(scale.x, scale.y, scale.z);             // Scale last
+	model.Draw();
+	glPopMatrix();
 }
