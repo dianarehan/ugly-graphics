@@ -45,6 +45,22 @@ compile_commands.json
 Thumbs.db
 desktop.ini
 
+# Ignore Semantic Symbols Database
+*.db
+
+# Ignore JSON layout files (e.g., backups)
+*.json
+
+# Ignore intermediate and debug files
+*.ipch
+*.pdb
+*.obj
+*.idb
+*.tlog
+*.log
+
+# Ignore project-specific files
+*.vcxproj*
 
 
 *.user
