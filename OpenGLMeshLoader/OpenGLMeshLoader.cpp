@@ -2,6 +2,16 @@
 #include "Model_3DS.h"
 #include "GLTexture.h"
 #include <glut.h>
+#include <iostream>
+#include <stdio.h>
+#include <math.h>
+#include <irrKlang.h>
+#include <thread>
+using namespace irrklang;
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <sstream>
 
 int WIDTH = 1280;
 int HEIGHT = 720;
@@ -53,6 +63,10 @@ Model_3DS model_tank;
 //textures
 GLTexture tex_ground;
 
+//sound data
+irrklang::ISoundEngine* engine = irrklang::createIrrKlangDevice();
+irrklang::ISound* backgroundSound = nullptr;
+
 //methods declarations
 void InitLightSource();
 void InitMaterial();
@@ -63,6 +77,7 @@ void LoadAssets();
 void InitializeGLUT(int argc, char** argv);
 void EnableOpenGLFeatures();
 void RegisterCallbacks();
+void playSound(const char* soundFile, bool loop);
 
 void RenderGround()
 {
@@ -233,7 +248,10 @@ void main(int argc, char** argv)
 	myInit();
 	LoadAssets();
 	EnableOpenGLFeatures();
+	if (!backgroundSound)
+		backgroundSound = engine->play2D("bg_sound.wav", true, false, true);
 	glutMainLoop();
+	engine->drop();
 }
 
 void InitLightSource()
@@ -404,4 +422,10 @@ void EnableOpenGLFeatures()
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
+}
+
+void playSound(const char* soundFile, bool loop) {
+	if (engine) {
+		engine->play2D(soundFile, loop, false, true);
+	}
 }
