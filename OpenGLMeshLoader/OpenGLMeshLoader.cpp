@@ -7,24 +7,35 @@
 #include <math.h>
 #include <irrKlang.h>
 #include <thread>
-using namespace irrklang;
 #include <cstdlib>
 #include <ctime>
 #include <string>
 #include <sstream>
+using namespace irrklang;
 
-int WIDTH = 1280;
-int HEIGHT = 720;
+//frame Settings
+int xCord = 1280;
+int yCord = 720;
 
-GLuint tex;
+//game data
+#pragma region
 char title[] = "Car Game";
+int scoreScene1 = 0;
+int scoreScene2 = 0;
+const int maxScore = 15;
+int lives = 5;
+bool winGame = false;
+#pragma endregion
 
-//camera settings
+//Camera Settings
+#pragma region 
 GLdouble fovy = 45.0;
-GLdouble aspectRatio = (GLdouble)WIDTH / (GLdouble)HEIGHT;
+GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
 GLdouble zNear = 0.1;
-GLdouble zFar = 100;
+GLdouble zFar = 100.0;
+#pragma endregion
 
+#pragma region
 class Vector
 {
 public:
@@ -46,10 +57,12 @@ public:
 Vector Eye(20, 5, 20);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
+#pragma endregion
 
 int cameraZoom = 0;
 
 //models variables
+#pragma region 
 Model_3DS model_house;
 Model_3DS model_tree;
 Model_3DS model_car;
@@ -59,15 +72,22 @@ Model_3DS model_sign_direction;
 Model_3DS model_sign_oneway;
 Model_3DS model_sign_pedistrian;
 Model_3DS model_tank;
+#pragma endregion
 
 //textures
+GLuint tex;
 GLTexture tex_ground;
 
 //sound data
+#pragma region
 irrklang::ISoundEngine* engine = irrklang::createIrrKlangDevice();
 irrklang::ISound* backgroundSound = nullptr;
+bool hasPlayedWinSound = false;
+bool hasPlayedLoseSound = false;
+#pragma endregion
 
 //methods declarations
+#pragma region
 void InitLightSource();
 void InitMaterial();
 void myInit(void);
@@ -78,6 +98,8 @@ void InitializeGLUT(int argc, char** argv);
 void EnableOpenGLFeatures();
 void RegisterCallbacks();
 void playSound(const char* soundFile, bool loop);
+void Render2DText(int score, bool gameWin, bool gameLose);
+#pragma endregion
 
 void RenderGround()
 {
@@ -111,8 +133,6 @@ void RenderGround()
 void myDisplay(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
@@ -185,7 +205,6 @@ void myDisplay(void)
 
 	//sky box
 	glPushMatrix();
-
 	GLUquadricObj* qobj;
 	qobj = gluNewQuadric();
 	glTranslated(50, 0, 0);
@@ -195,18 +214,14 @@ void myDisplay(void)
 	gluQuadricNormals(qobj, GL_SMOOTH);
 	gluSphere(qobj, 100, 100, 100);
 	gluDeleteQuadric(qobj);
-
-
 	glPopMatrix();
-
-
 
 	glutSwapBuffers();
 }
 
 void myMotion(int x, int y)
 {
-	y = HEIGHT - y;
+	y = yCord - y;
 
 	if (cameraZoom - y > 0)
 	{
@@ -233,7 +248,7 @@ void myMotion(int x, int y)
 
 void myMouse(int button, int state, int x, int y)
 {
-	y = HEIGHT - y;
+	y = yCord - y;
 
 	if (state == GLUT_DOWN)
 	{
@@ -359,8 +374,8 @@ void myReshape(int w, int h)
 		h = 1;
 	}
 
-	WIDTH = w;
-	HEIGHT = h;
+	xCord = w;
+	yCord = h;
 
 	// set the drawable region of the window
 	glViewport(0, 0, w, h);
@@ -368,7 +383,7 @@ void myReshape(int w, int h)
 	// set up the projection matrix 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(fovy, (GLdouble)WIDTH / (GLdouble)HEIGHT, zNear, zFar);
+	gluPerspective(fovy, (GLdouble)xCord / (GLdouble)yCord, zNear, zFar);
 
 	// go back to modelview matrix so we can move the objects about
 	glMatrixMode(GL_MODELVIEW);
@@ -400,7 +415,7 @@ void InitializeGLUT(int argc, char** argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize(WIDTH, HEIGHT);
+	glutInitWindowSize(xCord, yCord);
 	glutInitWindowPosition(100, 150);
 	glutCreateWindow(title);
 }
@@ -428,4 +443,56 @@ void playSound(const char* soundFile, bool loop) {
 	if (engine) {
 		engine->play2D(soundFile, loop, false, true);
 	}
+}
+
+void Render2DText(int score, bool gameWin, bool gameLose) {
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0.0, 800.0, 0.0, 600.0);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	if (gameLose) {
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glRasterPos2f(xCord / 2.0 - 200, yCord / 2.0);
+		char message[50];
+		if (scoreScene1 < maxScore)
+			sprintf(message, "Game Lose, You ran out of gas, with a score of %d out of %d", scoreScene1+scoreScene2,2* maxScore);
+		else if (scoreScene2 < maxScore)
+			sprintf(message, "Game Lose, Your player is hungry :( , final score %d out of %d", scoreScene1 + scoreScene2,2* maxScore);
+		for (char* c = message; *c != '\0'; c++) {
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+		}
+	}
+	else if (gameWin) {
+		glColor3f(0.1137f, 0.6118f, 0.0980f);
+		glRasterPos2f(xCord / 2.0 - 200, yCord / 2.0);
+		char message[50];
+		sprintf(message, "Game Win, with a final score % d out of % d", scoreScene1 + scoreScene2,2* maxScore);
+		for (char* c = message; *c != '\0'; c++) {
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+		}
+	}
+	else {
+		glColor3f(0.0f, 0.0f, 0.0f);
+		glRasterPos2f(50.0f, 530.0f);
+		std::string scoreText = "Score: " + std::to_string(score)+ " / "+ std::to_string(maxScore);
+		for (char c : scoreText) {
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+		}
+
+		glColor3f(0.0f, 0.0f, 0.0f);
+		glRasterPos2f(50.0f, 500.0f);
+		std::string timeText = "Lives: " + std::to_string(static_cast<int>(lives));
+		for (char c : timeText) {
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+		}
+	}
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
 }
