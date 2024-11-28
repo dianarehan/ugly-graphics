@@ -160,7 +160,7 @@ void myDisplay(void)
 	DrawModel(model_pizza, Vector(10, 10, 10), Vector(0.008, 0.008, 0.008), Vector(0, 0, -90));
 
 	// car model
-	DrawModel(model_car, Vector(0, 0, 0), Vector(3.5f, 3.5f, 3.5f), Vector(0, 90, 0));
+	DrawModel(model_car, Vector(0, 0, 15), Vector(1.5f, 1.5f, 1.5f), Vector(0, 180, 0));
 
 	// stop sign model
 	DrawModel(model_sign_stop, Vector(0, 0, 0), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
