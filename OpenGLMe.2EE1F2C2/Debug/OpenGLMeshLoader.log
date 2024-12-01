@@ -1,0 +1,23 @@
+﻿  GLTexture.cpp
+  Model_3DS.cpp
+D:\Semester 7\DMET 502 graphics\ugly-graphics\GLTexture.cpp(61,16): warning C4996: '_strlwr': This function or variable may be unsafe. Consider using _strlwr_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\GLTexture.cpp(65,17): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\GLTexture.cpp(77,16): warning C4996: '_strlwr': This function or variable may be unsafe. Consider using _strlwr_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\GLTexture.cpp(146,15): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  D:\Semester 7\DMET 502 graphics\ugly-graphics\Model_3DS.cpp(78) : You need to uncomment this if you are using MFC
+D:\Semester 7\DMET 502 graphics\ugly-graphics\Model_3DS.cpp(182,10): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\Model_3DS.cpp(212,11): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\Model_3DS.cpp(764,2): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  OpenGLMeshLoader.cpp
+D:\Semester 7\DMET 502 graphics\ugly-graphics\TextureBuilder.h(27,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
+  (compiling source file 'OpenGLMeshLoader.cpp')
+  
+D:\Semester 7\DMET 502 graphics\ugly-graphics\TextureBuilder.h(28,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
+  (compiling source file 'OpenGLMeshLoader.cpp')
+  
+D:\Semester 7\DMET 502 graphics\ugly-graphics\OpenGLMeshLoader.cpp(442,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\OpenGLMeshLoader.cpp(444,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Semester 7\DMET 502 graphics\ugly-graphics\OpenGLMeshLoader.cpp(453,3): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  Generating Code...
+GLTexture.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/INCREMENTAL:NO' specification
+  OpenGLMeshLoader.vcxproj -> D:\Semester 7\DMET 502 graphics\ugly-graphics\Debug\OpenGLMeshLoader19.exe
