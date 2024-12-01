@@ -117,14 +117,16 @@ void RenderGround()
 
 	glColor3f(0.6, 0.6, 0.6);	// Dim the ground texture a bit
 
-	glEnable(GL_TEXTURE_2D);	// Enable 2D texturing
+	glEnable(GL_TEXTURE_2D);
 
-	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);	// Bind the ground texture
+	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
+
+	glRotatef(45, 0, 1, 0);
 
 	glPushMatrix();
 	glBegin(GL_QUADS);
-	glNormal3f(0, 1, 0);	// Set quad normal direction.
-	glTexCoord2f(0, 0);		// Set tex coordinates ( Using (0,0) -> (5,5) with texture wrapping set to GL_REPEAT to simulate the ground repeated grass texture).
+	glNormal3f(0, 1, 0);
+	glTexCoord2f(0, 0);
 	glVertex3f(-20, 0, -20);
 	glTexCoord2f(5, 0);
 	glVertex3f(20, 0, -20);
@@ -135,9 +137,9 @@ void RenderGround()
 	glEnd();
 	glPopMatrix();
 
-	glEnable(GL_LIGHTING);	// Enable lighting again for other entites coming throung the pipeline.
+	glEnable(GL_LIGHTING);
 
-	glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
+	glColor3f(1, 1, 1);
 }
 
 void myDisplay(void)
@@ -387,7 +389,7 @@ void LoadAssets()
 
 
 	// Loading texture files
-	tex_ground.Load("Textures/ground.bmp");
+	tex_ground.Load("Textures/road1.bmp");
 	loadBMP(&tex, "Textures/blu-sky-3.bmp", true);
 }
 
