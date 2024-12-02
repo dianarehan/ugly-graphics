@@ -1,0 +1,17 @@
+# Ignore Visual Studio temporary files
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Ignore build directories (bin, obj, etc.)
+/bin/
+/obj/
+
+# Ignore certain application extensions
+*.pdb
+*.log
+*.sdf
+*.cache
+
