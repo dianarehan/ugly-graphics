@@ -29,6 +29,8 @@ Model_3DS model_sign_pedestrian;
 Model_3DS model_tank;
 Model_3DS model_building;
 Model_3DS model_building2;
+Model_3DS barrier;
+
 #pragma endregion
 
 //textures
@@ -185,6 +187,63 @@ void UpdateSigns(float deltaTime) {
 	}
 }
 
+void RenderHeadlights() {
+	// Enable lighting
+	glEnable(GL_LIGHTING);
+
+	GLfloat lightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GLfloat lightAmbient[] = { 0.02f, 0.02f, 0.02f, 1.0f };
+	GLfloat lightSpecular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	// Left headlight as a light source (light 0)
+	glPushMatrix();
+	glTranslatef(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
+
+	//left headlight light source
+	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f, 1.0f };  // Homogeneous coordinates
+	glLightfv(GL_LIGHT0, GL_POSITION, leftLightPosition);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
+	const GLfloat CONSTANT_ATTENUATION = 0.8f;
+	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, CONSTANT_ATTENUATION);
+	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05f);
+	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.02f);
+
+	glEnable(GL_LIGHT0);
+
+	glDisable(GL_LIGHTING);
+	glColor3f(1.0f, 1.0f, 0.8f);
+	glutSolidSphere(0.1, 10, 10);
+	glEnable(GL_LIGHTING);
+
+	glPopMatrix();
+
+	// Right headlight as a light source (light 1)
+	glPushMatrix();
+	glTranslatef(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
+
+	// Set the position and properties for the right headlight light source
+	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f, 1.0f };  // Homogeneous coordinates
+	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, lightSpecular);
+	const GLfloat CONSTANT_ATTENUATION2 = 0.8f;
+	glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, CONSTANT_ATTENUATION2);
+	glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.2f);
+	glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.2f);
+
+	glEnable(GL_LIGHT1);
+
+	glDisable(GL_LIGHTING);
+	glColor3f(1.0f, 1.0f, 0.8f);
+	glutSolidSphere(0.1, 10, 10);
+	glEnable(GL_LIGHTING);
+
+	glPopMatrix();
+}
+
 void DrawSigns() {
 	for (const auto& sign : signPositions) {
 		switch (sign.type) {
@@ -201,16 +260,15 @@ void DrawSigns() {
 	}
 }
 
-void myDisplay1()
-{
-
+void myDisplay1() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	/*GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);*/
 
+	
 	glPushMatrix();
 	glTranslatef(0, 0, +moveSpeed);
 
@@ -224,16 +282,20 @@ void myDisplay1()
 
 	DrawSigns();
 
-	//sky box
+	// skybox
 	DrawSkyBox();
 
 	glPopMatrix();
 
-	// car model
+
+	RenderHeadlights();
+	// Draw the car model
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 
+	// Render 2D UI elements (score)
 	Render2DText(scoreScene1, false, false);
 
+	// Swap the buffers to display the updated frame
 	glutSwapBuffers();
 }
 
@@ -572,7 +634,7 @@ void LoadAssets()
 	model_tank.Load("Models/tank/gasContain.3ds");
 	//model_building.Load("Models/building/Building_italian.3ds");
 	//model_building2.Load("Models/building2/Building.3DS");
-
+	//barrier.Load("Models/barrier/barrier.3ds");
 	// Loading texture files
 	tex_ground.Load("Textures/road1.bmp");
 
