@@ -187,6 +187,24 @@ void UpdateSigns(float deltaTime) {
 	}
 }
 
+void RenderLightVolume(GLfloat x, GLfloat y, GLfloat z, GLfloat radius) {
+	glPushMatrix();
+	glTranslatef(x, y, z);
+
+	// Enable blending for transparency
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Render a semi-transparent sphere
+	glColor4f(1.0f, 1.0f, 0.5f, 0.3f);  // Light yellow with transparency
+	glutSolidSphere(radius, 20, 20);
+
+	// Disable blending
+	glDisable(GL_BLEND);
+
+	glPopMatrix();
+}
+
 void RenderHeadlights() {
 	// Enable lighting
 	glEnable(GL_LIGHTING);
@@ -195,12 +213,11 @@ void RenderHeadlights() {
 	GLfloat lightAmbient[] = { 0.02f, 0.02f, 0.02f, 1.0f };
 	GLfloat lightSpecular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-	// Left headlight as a light source (light 0)
 	glPushMatrix();
 	glTranslatef(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
 
 	//left headlight light source
-	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f, 1.0f };  // Homogeneous coordinates
+	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 20.0f, 1.0f };  // Homogeneous coordinates
 	glLightfv(GL_LIGHT0, GL_POSITION, leftLightPosition);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
@@ -219,12 +236,12 @@ void RenderHeadlights() {
 
 	glPopMatrix();
 
-	// Right headlight as a light source (light 1)
+	//Right headlight
 	glPushMatrix();
 	glTranslatef(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
 
 	// Set the position and properties for the right headlight light source
-	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f, 1.0f };  // Homogeneous coordinates
+	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z -20.0f, 1.0f };  // Homogeneous coordinates
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
@@ -236,11 +253,21 @@ void RenderHeadlights() {
 
 	glEnable(GL_LIGHT1);
 
+	glLightfv(GL_LIGHT0, GL_POSITION, leftLightPosition);
+	glEnable(GL_LIGHT0);
+	RenderLightVolume(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 15.0f, 0.5f);
+
+	// Right headlight
+	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
+	glEnable(GL_LIGHT1);
+	RenderLightVolume(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 7.5f, 0.5f);
+
+	// Render visual spheres for headlights
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 0.8f);
 	glutSolidSphere(0.1, 10, 10);
+	glutSolidSphere(0.1, 10, 10);
 	glEnable(GL_LIGHTING);
-
 	glPopMatrix();
 }
 
