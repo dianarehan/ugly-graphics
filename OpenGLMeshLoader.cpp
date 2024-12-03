@@ -11,6 +11,10 @@
 #include <ctime>
 #include <string>
 #include <sstream>
+#include <vector>
+#include <cstdlib> 
+#include <ctime>  
+
 using namespace irrklang;
 
 #pragma region
@@ -39,16 +43,23 @@ int yCord = 720;
 
 //game data
 #pragma region
-char title[] = "Car Game";
+char title[] = "Car in a Mission";
 int scoreScene1 = 0;
 int scoreScene2 = 0;
 const int maxScore = 15;
 int lives = 5;
+bool gameOver = false;
 bool winGame = false;
 enum CurrScene { scene1, scene2 };
 CurrScene currentScene = scene1;
 enum CameraMode { firstPerson, thirdPerson };
 CameraMode cameraMode = thirdPerson;
+Vector carPosition(0, 0, 15);
+float MIN_X = -10.0f;
+float MAX_X = 10.0f;
+float moveSpeed = 5.0f;
+float timeRemaining = 40.0f;
+std::vector<Vector> signPositions;
 #pragma endregion
 
 //Camera Settings
@@ -74,9 +85,8 @@ Model_3DS model_tree;
 Model_3DS model_car;
 Model_3DS model_pizza;
 Model_3DS model_sign_stop;
-Model_3DS model_sign_direction;
 Model_3DS model_sign_oneway;
-Model_3DS model_sign_pedistrian;
+Model_3DS model_sign_pedestrian;
 Model_3DS model_tank;
 Model_3DS model_building;
 Model_3DS model_building2;
@@ -109,6 +119,8 @@ void playSound(const char* soundFile, bool loop);
 void Render2DText(int score, bool gameWin, bool gameLose);
 void DrawSkyBox();
 void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation);
+void spawnRandomSign();
+bool signsPositionValid(const Vector& newPosition);
 #pragma endregion
 
 void RenderGround()
@@ -117,14 +129,14 @@ void RenderGround()
 
 	glColor3f(0.6, 0.6, 0.6);	// Dim the ground texture a bit
 
-	glEnable(GL_TEXTURE_2D);	// Enable 2D texturing
+	glEnable(GL_TEXTURE_2D);
 
-	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);	// Bind the ground texture
+	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
 
 	glPushMatrix();
 	glBegin(GL_QUADS);
-	glNormal3f(0, 1, 0);	// Set quad normal direction.
-	glTexCoord2f(0, 0);		// Set tex coordinates ( Using (0,0) -> (5,5) with texture wrapping set to GL_REPEAT to simulate the ground repeated grass texture).
+	glNormal3f(0, 1, 0);
+	glTexCoord2f(0, 0);
 	glVertex3f(-20, 0, -20);
 	glTexCoord2f(5, 0);
 	glVertex3f(20, 0, -20);
@@ -135,12 +147,12 @@ void RenderGround()
 	glEnd();
 	glPopMatrix();
 
-	glEnable(GL_LIGHTING);	// Enable lighting again for other entites coming throung the pipeline.
+	glEnable(GL_LIGHTING);
 
-	glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
+	glColor3f(1, 1, 1);
 }
 
-void myDisplay(void)
+void myDisplay1(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -149,11 +161,75 @@ void myDisplay(void)
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
+	glPushMatrix();
+	glTranslatef(0, 0, +moveSpeed);
+
 	// ground
 	RenderGround();
 
+	// stop sign model
+	DrawModel(model_sign_stop, Vector(-12, 0, -5), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
+
+	// oneway sign model
+	DrawModel(model_sign_oneway, Vector(-12, 0, -10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
+
+	// pedistrian sign model
+	DrawModel(model_sign_pedestrian, Vector(12, 0, 5), Vector(0.1, 0.1, 0.1), Vector(0, 20, 0));
+
+	// tank model
+	DrawModel(model_tank, Vector(10, 0, 10), Vector(0.07, 0.07, 0.07), Vector(0, 0, 0));
+
+	// building model, no errors but it is not visible for some unknown reason
+	//DrawModel(model_building, Vector(0, 0, 10), Vector(100, 100, 100), Vector(0, 0, 0));
+
+	//DrawModel(model_building2, Vector(0, 0, 10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
+
+	for (const auto& pos : signPositions) {
+		int signType = rand() % 3;
+
+		switch (signType) {
+		case 0:
+			DrawModel(model_sign_stop, pos, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
+			break;
+		case 1:
+			DrawModel(model_sign_oneway, pos, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
+			break;
+		case 2:
+			DrawModel(model_sign_pedestrian, pos, Vector(0.1f, 0.1f, 0.1f), Vector(0, 20, 0));
+			break;
+		default:
+			break;
+		}
+	}
+
+	//sky box
+	DrawSkyBox();
+
+	glPopMatrix();
+
+	// car model
+	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+
+	Render2DText(scoreScene1, false, false);
+
+	glutSwapBuffers();
+}
+
+void myDisplay2(void) {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
+	RenderGround();
+
+	// car
+	DrawModel(model_car, Vector(0, 0, 15), Vector(1.4f, 1.5f, 1.5f), Vector(0, 180, 0));
+
 	// tree model
-	DrawModel(model_tree, Vector(10, 0, 0), Vector(0.7, 0.7, 0.7),Vector(0,0,0));
+	DrawModel(model_tree, Vector(10, 0, 0), Vector(0.7, 0.7, 0.7), Vector(0, 0, 0));
 
 	// house model
 	DrawModel(model_house, Vector(0, 0, 0), Vector(1, 1, 1), Vector(90, 0, 0));
@@ -161,38 +237,10 @@ void myDisplay(void)
 	// pizza
 	DrawModel(model_pizza, Vector(10, 10, 10), Vector(0.008, 0.008, 0.008), Vector(0, 0, -90));
 
-	// car model
-	DrawModel(model_car, Vector(0, 0, 15), Vector(1.5f, 1.5f, 1.5f), Vector(0, 180, 0));
-
-	// stop sign model
-	DrawModel(model_sign_stop, Vector(0, 0, 0), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
-
-	// direction sign model
-	DrawModel(model_sign_direction, Vector(10, 5, 2), Vector(0.1, 0.1, 0.1), Vector(0, 90, 0));
-
-	// oneway sign model
-	DrawModel(model_sign_oneway, Vector(10, 0, 10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
-
-	// pedistrian sign model
-	DrawModel(model_sign_pedistrian, Vector(12, 0, 7), Vector(0.1, 0.1, 0.1), Vector(0, 45, 0));
-
-	// tank model
-	DrawModel(model_tank, Vector(10, 0, 10), Vector(0.07, 0.07, 0.07), Vector(0, 0, 0));
-	
-	// building model, no errors but it is not visible for some unknown reason
-	DrawModel(model_building, Vector(0, 0, 10), Vector(100, 100, 100), Vector(0, 0, 0));
-
-	DrawModel(model_building2, Vector(0, 0, 10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
-
-	//sky box
 	DrawSkyBox();
 
-	if (currentScene == scene1) {
-		Render2DText(scoreScene1, false, false);
-	}
-	else if (currentScene == scene2) {
-		Render2DText(scoreScene2, false, false);
-	}
+	Render2DText(scoreScene2, false, false);
+
 	glutSwapBuffers();
 }
 
@@ -213,7 +261,7 @@ void myMotion(int x, int y)
 
 	cameraZoom = y;
 
-	glLoadIdentity();	//Clear Model_View Matrix
+	glLoadIdentity();
 
 	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
 
@@ -233,10 +281,34 @@ void myMouse(int button, int state, int x, int y)
 	}
 }
 
+void LoadScene2() {
+	tex_ground.Load("Textures/ground.bmp");
+}
+
+void timer(int value) {
+	moveSpeed += 0.3f;
+	timeRemaining -= 0.1f;
+
+	if (timeRemaining == 20) {
+		currentScene = scene2;
+		LoadScene2();
+	}
+	if (timeRemaining == 0) {
+		//gameOver = true;
+	}
+
+	if (rand() % 10 == 0) {
+		spawnRandomSign();
+	}
+	glutPostRedisplay();
+	glutTimerFunc(100, timer, 0);
+}
+
 void main(int argc, char** argv)
 {
 	InitializeGLUT(argc, argv);
 	RegisterCallbacks();
+	glutTimerFunc(100, timer, 0);
 	myInit();
 	LoadAssets();
 	EnableOpenGLFeatures();
@@ -345,6 +417,26 @@ void myKeyboard(unsigned char button, int x, int y)
 	glutPostRedisplay();
 }
 
+void mySpecialKeyboard(int key, int x, int y)
+{
+	float moveAmount = 1.0f;
+
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		if (carPosition.x - moveAmount >= MIN_X) {
+			carPosition.x -= moveAmount;
+		}
+		break;
+	case GLUT_KEY_RIGHT:
+		if (carPosition.x + moveAmount <= MAX_X) {
+			carPosition.x += moveAmount;
+		}
+		break;
+
+	}
+	glutPostRedisplay();
+}
+
 void myReshape(int w, int h)
 {
 	if (h == 0) {
@@ -378,16 +470,15 @@ void LoadAssets()
 	model_car.Load("Models/car/Car.3ds");
 	model_pizza.Load("Models/dominos/Models/Pizza.3ds");
 	model_sign_stop.Load("Models/road-signs/neuro_stop_3ds.3ds");
-	model_sign_direction.Load("Models/road-signs/neuro_direction_3ds.3ds");
 	model_sign_oneway.Load("Models/road-signs/neuro_oneway_3ds.3ds");
-	model_sign_pedistrian.Load("Models/road-signs/neuro_pedestrian_3ds.3ds");
+	model_sign_pedestrian.Load("Models/road-signs/neuro_pedestrian_3ds.3ds");
 	model_tank.Load("Models/tank/gasContain.3ds");
-	model_building.Load("Models/building/Building_italian.3ds");
-	model_building2.Load("Models/building2/Building.3DS");
-
+	//model_building.Load("Models/building/Building_italian.3ds");
+	//model_building2.Load("Models/building2/Building.3DS");
 
 	// Loading texture files
-	tex_ground.Load("Textures/ground.bmp");
+	tex_ground.Load("Textures/road1.bmp");
+
 	loadBMP(&tex, "Textures/blu-sky-3.bmp", true);
 }
 
@@ -396,14 +487,20 @@ void InitializeGLUT(int argc, char** argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(xCord, yCord);
-	glutInitWindowPosition(100, 80);
+	glutInitWindowPosition(0, 0);
 	glutCreateWindow(title);
 }
 
 void RegisterCallbacks()
 {
-	glutDisplayFunc(myDisplay);
+	if (currentScene == scene1) {
+		glutDisplayFunc(myDisplay1);
+	}
+	else {
+		glutDisplayFunc(myDisplay2);
+	}
 	glutKeyboardFunc(myKeyboard);
+	glutSpecialFunc(mySpecialKeyboard);
 	glutMotionFunc(myMotion);
 	glutMouseFunc(myMouse);
 	glutReshapeFunc(myReshape);
@@ -439,9 +536,9 @@ void Render2DText(int score, bool gameWin, bool gameLose) {
 		glRasterPos2f(xCord / 2.0 - 200, yCord / 2.0);
 		char message[50];
 		if (scoreScene1 < maxScore)
-			sprintf(message, "Game Lose, You ran out of gas, with a score of %d out of %d", scoreScene1+scoreScene2,2* maxScore);
+			sprintf(message, "Game Lose, You ran out of gas, with a score of %d out of %d", scoreScene1 + scoreScene2, 2 * maxScore);
 		else if (scoreScene2 < maxScore)
-			sprintf(message, "Game Lose, Your player is hungry :( , final score %d out of %d", scoreScene1 + scoreScene2,2* maxScore);
+			sprintf(message, "Game Lose, Your player is hungry :( , final score %d out of %d", scoreScene1 + scoreScene2, 2 * maxScore);
 		for (char* c = message; *c != '\0'; c++) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 		}
@@ -450,7 +547,7 @@ void Render2DText(int score, bool gameWin, bool gameLose) {
 		glColor3f(0.1137f, 0.6118f, 0.0980f);
 		glRasterPos2f(xCord / 2.0 - 200, yCord / 2.0);
 		char message[50];
-		sprintf(message, "Game Win, with a final score % d out of % d", scoreScene1 + scoreScene2,2* maxScore);
+		sprintf(message, "Game Win, with a final score % d out of % d", scoreScene1 + scoreScene2, 2 * maxScore);
 		for (char* c = message; *c != '\0'; c++) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 		}
@@ -458,14 +555,21 @@ void Render2DText(int score, bool gameWin, bool gameLose) {
 	else {
 		glColor3f(0.0f, 0.0f, 0.0f);
 		glRasterPos2f(50.0f, 530.0f);
-		std::string scoreText = "Score: " + std::to_string(score)+ " / "+ std::to_string(maxScore);
+		std::string scoreText = "Score: " + std::to_string(score) + " / " + std::to_string(maxScore);
 		for (char c : scoreText) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
 		}
 
 		glColor3f(0.0f, 0.0f, 0.0f);
 		glRasterPos2f(50.0f, 500.0f);
-		std::string timeText = "Lives: " + std::to_string(static_cast<int>(lives));
+		std::string livesText = "Lives: " + std::to_string(static_cast<int>(lives));
+		for (char c : livesText) {
+			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+		}
+
+		glColor3f(0.0f, 0.0f, 0.0f);
+		glRasterPos2f(50.0f, 470.0f);
+		std::string timeText = "Time Remaining: " + std::to_string(static_cast<int>(timeRemaining));
 		for (char c : timeText) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
 		}
@@ -494,11 +598,40 @@ void DrawSkyBox() {
 void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation)
 {
 	glPushMatrix();
-	glTranslatef(position.x, position.y, position.z); // Translate first
-	glRotatef(rotation.x, 1.0f, 0.0f, 0.0f);         // Rotate second
+	glTranslatef(position.x, position.y, position.z);
+	glRotatef(rotation.x, 1.0f, 0.0f, 0.0f);
 	glRotatef(rotation.y, 0.0f, 1.0f, 0.0f);
 	glRotatef(rotation.z, 0.0f, 0.0f, 1.0f);
-	glScalef(scale.x, scale.y, scale.z);             // Scale last
+	glScalef(scale.x, scale.y, scale.z);
 	model.Draw();
 	glPopMatrix();
+}
+
+bool signsPositionValid(const Vector& newPosition) {
+	const float minDistance = 5.0f;
+
+	for (const auto& pos : signPositions) {
+		if (newPosition.x == pos.x) {
+			float dist = abs(newPosition.z - pos.z);
+			if (dist < minDistance) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+void spawnRandomSign() {
+	Vector newPos;
+
+	newPos.x = (rand() % 2 == 0) ? 15 : -15;
+	newPos.y = 0;
+	newPos.z = (rand() % 36) - 30;
+
+	while (!signsPositionValid(newPos)) {
+		newPos.z = (rand() % 36) - 30;
+	}
+
+	signPositions.push_back(newPos);
 }
