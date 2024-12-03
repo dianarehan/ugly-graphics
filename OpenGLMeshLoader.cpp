@@ -106,7 +106,7 @@ std::vector<Collectable> collectables;
 #pragma region
 std::vector<Sign> signPositions;
 const float ROAD_WIDTH = 20.0f;
-const float SPAWN_DISTANCE = 50.0f;
+const float SPAWN_DISTANCE = 100;
 const float REMOVE_DISTANCE = 10.0f;
 float spawnTimer = 0.0f;
 const float spawnInterval = 1.5f;
@@ -155,10 +155,10 @@ void SpawnSign() {
 	Sign newSign;
 
 	if (rand() % 2 == 0) {
-		newSign.position = Vector(rand() % 6 - 15, 0, carPosition.z - SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 6 - 15, 0, -SPAWN_DISTANCE);
 	}
 	else {
-		newSign.position = Vector(rand() % 6 + 10, 0, carPosition.z - SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 6 + 10, 0, -SPAWN_DISTANCE);
 	}
 
 	newSign.type = rand() % 3;
@@ -166,17 +166,17 @@ void SpawnSign() {
 }
 
 void UpdateSigns(float deltaTime) {
-
 	spawnTimer += deltaTime;
 
 	if (spawnTimer >= spawnInterval) {
 		SpawnSign();
 		spawnTimer = 0.0f;
 	}
+
 	for (auto it = signPositions.begin(); it != signPositions.end();) {
 		it->position.z += moveSpeed * deltaTime;
 
-		if (it->position.z > carPosition.z + REMOVE_DISTANCE) {
+		if (it->position.z > REMOVE_DISTANCE) {
 			it = signPositions.erase(it);
 		}
 		else {
@@ -203,10 +203,7 @@ void DrawSigns() {
 
 void myDisplay1()
 {
-	static int lastTime = glutGet(GLUT_ELAPSED_TIME);
-	int currentTime = glutGet(GLUT_ELAPSED_TIME);
-	float deltaTime = (currentTime - lastTime) / 1000.0f;
-	lastTime = currentTime;
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
@@ -225,7 +222,6 @@ void myDisplay1()
 		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 0, 0));
 	}
 
-	UpdateSigns(deltaTime);
 	DrawSigns();
 
 	//sky box
@@ -319,15 +315,17 @@ void timer(int value) {
 		currentScene = scene2;
 		LoadScene2();
 	}
-	if (timeRemaining == 0) {
-		//gameOver = true;
+	if (timeRemaining <= 0) {
+		gameOver = true;
 	}
-
 	/*if (rand() % 50 == 0) {
 		spawnCollectables();
 	}*/
 
+	UpdateSigns(0.1f);
+
 	glutPostRedisplay();
+
 	glutTimerFunc(100, timer, 0);
 }
 
