@@ -17,67 +17,6 @@
 
 using namespace irrklang;
 
-#pragma region
-class Vector
-{
-public:
-	GLdouble x, y, z;
-	Vector() {}
-	Vector(GLdouble _x, GLdouble _y, GLdouble _z) : x(_x), y(_y), z(_z) {}
-	//================================================================================================//
-	// Operator Overloading; In C++ you can override the behavior of operators for you class objects. //
-	// Here we are overloading the += operator to add a given value to all vector coordinates.        //
-	//================================================================================================//
-	void operator +=(float value)
-	{
-		x += value;
-		y += value;
-		z += value;
-	}
-};
-#pragma endregion
-
-//frame Settings
-int xCord = 1280;
-int yCord = 720;
-
-//game data
-#pragma region
-char title[] = "Car in a Mission";
-int scoreScene1 = 0;
-int scoreScene2 = 0;
-const int maxScore = 15;
-int lives = 5;
-bool gameOver = false;
-bool winGame = false;
-enum CurrScene { scene1, scene2 };
-CurrScene currentScene = scene1;
-enum CameraMode { firstPerson, thirdPerson };
-CameraMode cameraMode = thirdPerson;
-Vector carPosition(0, 0, 15);
-float MIN_X = -10.0f;
-float MAX_X = 10.0f;
-float moveSpeed = 5.0f;
-float timeRemaining = 40.0f;
-std::vector<Vector> signPositions;
-#pragma endregion
-
-//Camera Settings
-#pragma region 
-GLdouble fovy = 45.0;
-GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
-GLdouble zNear = 0.01;
-GLdouble zFar = 1000.0;
-float camX = 0.0;
-float camY = 7.0; //lw 3ayez aknak btbos odam decrease this val, lw aknek btwaty rasek increase this val
-float camZ = 30.0;
-Vector Eye(camX, camY, camZ);
-Vector At(0, 0, 0);
-Vector Up(0, 1, 0);
-#pragma endregion
-
-int cameraZoom = 0;
-
 //models variables
 #pragma region 
 Model_3DS model_house;
@@ -104,6 +43,91 @@ bool hasPlayedWinSound = false;
 bool hasPlayedLoseSound = false;
 #pragma endregion
 
+#pragma region
+class Vector
+{
+public:
+	GLdouble x, y, z;
+	Vector() {}
+	Vector(GLdouble _x, GLdouble _y, GLdouble _z) : x(_x), y(_y), z(_z) {}
+	//================================================================================================//
+	// Operator Overloading; In C++ you can override the behavior of operators for you class objects. //
+	// Here we are overloading the += operator to add a given value to all vector coordinates.        //
+	//================================================================================================//
+	void operator +=(float value)
+	{
+		x += value;
+		y += value;
+		z += value;
+	}
+};
+
+struct Collectable {
+	Model_3DS model;
+	Vector position;
+};
+
+struct Sign {
+	Vector position;
+	int type;
+};
+#pragma endregion
+
+//frame Settings
+int xCord = 1280;
+int yCord = 720;
+
+//game data
+#pragma region
+char title[] = "Car in a Mission";
+int scoreScene1 = 0;
+int scoreScene2 = 0;
+const int maxScore = 15;
+int lives = 5;
+bool gameOver = false;
+bool winGame = false;
+enum CurrScene { scene1, scene2 };
+CurrScene currentScene = scene1;
+enum CameraMode { firstPerson, thirdPerson };
+CameraMode cameraMode = thirdPerson;
+Vector carPosition(0, 0, 15);
+float MIN_X = -10.0f;
+float MAX_X = 10.0f;
+float moveSpeed = 5.0f;
+float timeRemaining = 40.0f;
+#pragma endregion
+
+//collectables data
+#pragma region
+std::vector<Collectable> collectables;
+#pragma endregion
+
+//signs data
+#pragma region
+std::vector<Sign> signPositions;
+const float ROAD_WIDTH = 20.0f;
+const float SPAWN_DISTANCE = 50.0f;
+const float REMOVE_DISTANCE = 10.0f;
+float spawnTimer = 0.0f;
+const float spawnInterval = 1.5f;
+#pragma endregion
+
+//Camera Settings
+#pragma region 
+GLdouble fovy = 45.0;
+GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
+GLdouble zNear = 0.01;
+GLdouble zFar = 1000.0;
+float camX = 0.0;
+float camY = 7.0; //lw 3ayez aknak btbos odam decrease this val, lw aknek btwaty rasek increase this val
+float camZ = 30.0;
+Vector Eye(camX, camY, camZ);
+Vector At(0, 0, 0);
+Vector Up(0, 1, 0);
+#pragma endregion
+
+int cameraZoom = 0;
+
 //methods declarations
 #pragma region
 void InitLightSource();
@@ -119,41 +143,70 @@ void playSound(const char* soundFile, bool loop);
 void Render2DText(int score, bool gameWin, bool gameLose);
 void DrawSkyBox();
 void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation);
-void spawnRandomSign();
-bool signsPositionValid(const Vector& newPosition);
+void spawnCollectables();
+void RenderGround();
+bool isOverlapping(const Vector& newPosition);
+void SpawnSign();
+void UpdateSigns(float deltaTime);
+void DrawSigns();
 #pragma endregion
 
-void RenderGround()
-{
-	glDisable(GL_LIGHTING);	// Disable lighting 
+void SpawnSign() {
+	Sign newSign;
 
-	glColor3f(0.6, 0.6, 0.6);	// Dim the ground texture a bit
+	if (rand() % 2 == 0) {
+		newSign.position = Vector(rand() % 6 - 15, 0, carPosition.z - SPAWN_DISTANCE);
+	}
+	else {
+		newSign.position = Vector(rand() % 6 + 10, 0, carPosition.z - SPAWN_DISTANCE);
+	}
 
-	glEnable(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
-
-	glPushMatrix();
-	glBegin(GL_QUADS);
-	glNormal3f(0, 1, 0);
-	glTexCoord2f(0, 0);
-	glVertex3f(-20, 0, -20);
-	glTexCoord2f(5, 0);
-	glVertex3f(20, 0, -20);
-	glTexCoord2f(5, 5);
-	glVertex3f(20, 0, 20);
-	glTexCoord2f(0, 5);
-	glVertex3f(-20, 0, 20);
-	glEnd();
-	glPopMatrix();
-
-	glEnable(GL_LIGHTING);
-
-	glColor3f(1, 1, 1);
+	newSign.type = rand() % 3;
+	signPositions.push_back(newSign);
 }
 
-void myDisplay1(void)
+void UpdateSigns(float deltaTime) {
+
+	spawnTimer += deltaTime;
+
+	if (spawnTimer >= spawnInterval) {
+		SpawnSign();
+		spawnTimer = 0.0f;
+	}
+	for (auto it = signPositions.begin(); it != signPositions.end();) {
+		it->position.z += moveSpeed * deltaTime;
+
+		if (it->position.z > carPosition.z + REMOVE_DISTANCE) {
+			it = signPositions.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+}
+
+void DrawSigns() {
+	for (const auto& sign : signPositions) {
+		switch (sign.type) {
+		case 0:
+			DrawModel(model_sign_stop, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
+			break;
+		case 1:
+			DrawModel(model_sign_oneway, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
+			break;
+		case 2:
+			DrawModel(model_sign_pedestrian, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 20, 0));
+			break;
+		}
+	}
+}
+
+void myDisplay1()
 {
+	static int lastTime = glutGet(GLUT_ELAPSED_TIME);
+	int currentTime = glutGet(GLUT_ELAPSED_TIME);
+	float deltaTime = (currentTime - lastTime) / 1000.0f;
+	lastTime = currentTime;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
@@ -167,40 +220,13 @@ void myDisplay1(void)
 	// ground
 	RenderGround();
 
-	// stop sign model
-	DrawModel(model_sign_stop, Vector(-12, 0, -5), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
-
-	// oneway sign model
-	DrawModel(model_sign_oneway, Vector(-12, 0, -10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
-
-	// pedistrian sign model
-	DrawModel(model_sign_pedestrian, Vector(12, 0, 5), Vector(0.1, 0.1, 0.1), Vector(0, 20, 0));
-
 	// tank model
-	DrawModel(model_tank, Vector(10, 0, 10), Vector(0.07, 0.07, 0.07), Vector(0, 0, 0));
-
-	// building model, no errors but it is not visible for some unknown reason
-	//DrawModel(model_building, Vector(0, 0, 10), Vector(100, 100, 100), Vector(0, 0, 0));
-
-	//DrawModel(model_building2, Vector(0, 0, 10), Vector(0.1, 0.1, 0.1), Vector(0, 0, 0));
-
-	for (const auto& pos : signPositions) {
-		int signType = rand() % 3;
-
-		switch (signType) {
-		case 0:
-			DrawModel(model_sign_stop, pos, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
-			break;
-		case 1:
-			DrawModel(model_sign_oneway, pos, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
-			break;
-		case 2:
-			DrawModel(model_sign_pedestrian, pos, Vector(0.1f, 0.1f, 0.1f), Vector(0, 20, 0));
-			break;
-		default:
-			break;
-		}
+	for (const auto& collectable : collectables) {
+		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 0, 0));
 	}
+
+	UpdateSigns(deltaTime);
+	DrawSigns();
 
 	//sky box
 	DrawSkyBox();
@@ -297,9 +323,10 @@ void timer(int value) {
 		//gameOver = true;
 	}
 
-	if (rand() % 10 == 0) {
-		spawnRandomSign();
-	}
+	/*if (rand() % 50 == 0) {
+		spawnCollectables();
+	}*/
+
 	glutPostRedisplay();
 	glutTimerFunc(100, timer, 0);
 }
@@ -316,6 +343,89 @@ void main(int argc, char** argv)
 		backgroundSound = engine->play2D("bg_sound.wav", true, false, true);
 	glutMainLoop();
 	engine->drop();
+}
+
+void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation)
+{
+	glPushMatrix();
+	glTranslatef(position.x, position.y, position.z);
+	glRotatef(rotation.x, 1.0f, 0.0f, 0.0f);
+	glRotatef(rotation.y, 0.0f, 1.0f, 0.0f);
+	glRotatef(rotation.z, 0.0f, 0.0f, 1.0f);
+	glScalef(scale.x, scale.y, scale.z);
+	model.Draw();
+	glPopMatrix();
+}
+
+void spawnCollectables() {
+	Vector randomPosition((rand() % 17) - 8, 0, (rand() % 36) - 30);
+
+	if (isOverlapping(randomPosition)) {
+		return;
+	}
+
+	Collectable newCollectable;
+	newCollectable.position = randomPosition;
+	newCollectable.model = model_tank;
+
+	collectables.push_back(newCollectable);
+}
+
+bool isOverlapping(const Vector& newPosition) {
+	const float minDistance = 5.0f;
+
+	for (const auto& collectable : collectables) {
+		float dist = sqrtf(
+			pow(collectable.position.x - newPosition.x, 2) +
+			pow(collectable.position.y - newPosition.y, 2) +
+			pow(collectable.position.z - newPosition.z, 2)
+		);
+
+		if (dist < minDistance) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void myKeyboard(unsigned char button, int x, int y)
+{
+	switch (button)
+	{
+	case 'w':
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+	case 'r':
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		break;
+	case 27:
+		exit(0);
+		break;
+	default:
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
+void mySpecialKeyboard(int key, int x, int y)
+{
+	float moveAmount = 1.0f;
+
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		if (carPosition.x - moveAmount >= MIN_X) {
+			carPosition.x -= moveAmount;
+		}
+		break;
+	case GLUT_KEY_RIGHT:
+		if (carPosition.x + moveAmount <= MAX_X) {
+			carPosition.x += moveAmount;
+		}
+		break;
+
+	}
+	glutPostRedisplay();
 }
 
 void InitLightSource()
@@ -342,6 +452,35 @@ void InitLightSource()
 	// Finally, define light source 0 position in World Space
 	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+}
+
+void RenderGround()
+{
+	glDisable(GL_LIGHTING);
+
+	glColor3f(0.6, 0.6, 0.6);
+
+	glEnable(GL_TEXTURE_2D);
+
+	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
+
+	glPushMatrix();
+	glBegin(GL_QUADS);
+	glNormal3f(0, 1, 0);
+	glTexCoord2f(0, 0);
+	glVertex3f(-20, 0, -20);
+	glTexCoord2f(5, 0);
+	glVertex3f(20, 0, -20);
+	glTexCoord2f(5, 5);
+	glVertex3f(20, 0, 20);
+	glTexCoord2f(0, 5);
+	glVertex3f(-20, 0, 20);
+	glEnd();
+	glPopMatrix();
+
+	glEnable(GL_LIGHTING);
+
+	glColor3f(1, 1, 1);
 }
 
 void InitMaterial()
@@ -395,46 +534,6 @@ void myInit(void)
 	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_NORMALIZE);
-}
-
-void myKeyboard(unsigned char button, int x, int y)
-{
-	switch (button)
-	{
-	case 'w':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		break;
-	case 'r':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-	case 27:
-		exit(0);
-		break;
-	default:
-		break;
-	}
-
-	glutPostRedisplay();
-}
-
-void mySpecialKeyboard(int key, int x, int y)
-{
-	float moveAmount = 1.0f;
-
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		if (carPosition.x - moveAmount >= MIN_X) {
-			carPosition.x -= moveAmount;
-		}
-		break;
-	case GLUT_KEY_RIGHT:
-		if (carPosition.x + moveAmount <= MAX_X) {
-			carPosition.x += moveAmount;
-		}
-		break;
-
-	}
-	glutPostRedisplay();
 }
 
 void myReshape(int w, int h)
@@ -593,45 +692,4 @@ void DrawSkyBox() {
 	gluSphere(qobj, 500, 100, 100);
 	gluDeleteQuadric(qobj);
 	glPopMatrix();
-}
-
-void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation)
-{
-	glPushMatrix();
-	glTranslatef(position.x, position.y, position.z);
-	glRotatef(rotation.x, 1.0f, 0.0f, 0.0f);
-	glRotatef(rotation.y, 0.0f, 1.0f, 0.0f);
-	glRotatef(rotation.z, 0.0f, 0.0f, 1.0f);
-	glScalef(scale.x, scale.y, scale.z);
-	model.Draw();
-	glPopMatrix();
-}
-
-bool signsPositionValid(const Vector& newPosition) {
-	const float minDistance = 5.0f;
-
-	for (const auto& pos : signPositions) {
-		if (newPosition.x == pos.x) {
-			float dist = abs(newPosition.z - pos.z);
-			if (dist < minDistance) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-void spawnRandomSign() {
-	Vector newPos;
-
-	newPos.x = (rand() % 2 == 0) ? 15 : -15;
-	newPos.y = 0;
-	newPos.z = (rand() % 36) - 30;
-
-	while (!signsPositionValid(newPos)) {
-		newPos.z = (rand() % 36) - 30;
-	}
-
-	signPositions.push_back(newPos);
 }
