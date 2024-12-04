@@ -175,7 +175,7 @@ bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& coll
 }
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
-	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 15, 2));
+	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z -20 , 2));
 	return distance < 2.5;
 }
 
