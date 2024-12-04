@@ -197,9 +197,9 @@ const float SPAWN_DISTANCE2 = 100.0f;
 //buildings data
 #pragma region
 std::vector<Vector> buildingPositions;
-const float BUILDING_SPACING = 30.0f;
+const float BUILDING_SPACING = 25.0f;
 const float BUILDING_OFFSET_X = 20.0f;
-const int NUM_BUILDINGS = 10;
+const int NUM_BUILDINGS = 8;
 const float BUILDING_REUSE_DISTANCE = 100.0f;
 #pragma endregion
 
@@ -426,7 +426,7 @@ void SpawnSign() {
 	Sign newSign;
 
 	if (rand() % 2 == 0) {
-		newSign.position = Vector(rand() % 2 + 1.5* MIN_X, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 3 + 1.5* MIN_X, 0, -SPAWN_DISTANCE);
 	}
 	else {
 		newSign.position = Vector(rand() % 3 +  MAX_X, 0, -SPAWN_DISTANCE);
