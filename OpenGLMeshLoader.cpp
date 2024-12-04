@@ -44,6 +44,7 @@ int yCord = 720;
 #pragma region
 irrklang::ISoundEngine* engine = irrklang::createIrrKlangDevice();
 irrklang::ISound* backgroundSound = nullptr;
+irrklang::ISound* carSound = nullptr;
 bool hasPlayedWinSound = false;
 bool hasPlayedLoseSound = false;
 #pragma endregion
@@ -174,7 +175,7 @@ bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& coll
 }
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
-	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 10, 2));
+	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 15, 2));
 	return distance < 2.5;
 }
 
@@ -182,6 +183,7 @@ void CheckAndHandleObstacleCollisions() {
 	for (auto& obstacle : obstacles) {
 		if (obstacle.effective && CheckCollisionWithObstacle(carPosition, obstacle)) {
 			lives -= 1;
+			playSound("sounds/crash(car-obs).wav", false);
 			obstacle.effective = false;
 		}
 	}
@@ -191,6 +193,7 @@ void CheckAndHandleCollisions() {
 	for (auto it = collectables.begin(); it != collectables.end();) {
 		if (CheckCollisionWithCollectable(carPosition, *it)) {
 			scoreScene1 += 10;
+			playSound("sounds/liquid(car-tank).wav", false);
 			it->isVisible = false;
 
 			it = collectables.erase(it);
@@ -556,7 +559,9 @@ void main(int argc, char** argv)
 	LoadAssets();
 	EnableOpenGLFeatures();
 	if (!backgroundSound)
-		backgroundSound = engine->play2D("bg_sound.wav", true, false, true);
+		backgroundSound = engine->play2D("sounds/bg_sound.wav", true, false, true);
+	if(!carSound)
+		carSound = engine->play2D("sounds/car moving.wav", true, false, true);
 	glutMainLoop();
 	engine->drop();
 }
