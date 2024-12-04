@@ -29,13 +29,16 @@ Model_3DS model_sign_pedestrian;
 Model_3DS model_tank;
 Model_3DS model_building;
 Model_3DS model_building2;
-Model_3DS barrier;
-
+Model_3DS model_obstacle;
 #pragma endregion
 
 //textures
 GLuint tex;
 GLTexture tex_ground;
+
+//frame Settings
+int xCord = 1280;
+int yCord = 720;
 
 //sound data
 #pragma region
@@ -45,6 +48,7 @@ bool hasPlayedWinSound = false;
 bool hasPlayedLoseSound = false;
 #pragma endregion
 
+//structs
 #pragma region
 class Vector
 {
@@ -67,17 +71,35 @@ public:
 struct Collectable {
 	Model_3DS model;
 	Vector position;
+	bool isVisible = true;
 };
 
 struct Sign {
 	Vector position;
 	int type;
 };
+
+struct Obstacle {
+	Model_3DS model;
+	Vector position;
+	bool effective = true;
+};
 #pragma endregion
 
-//frame Settings
-int xCord = 1280;
-int yCord = 720;
+//Camera Settings
+#pragma region 
+GLdouble fovy = 45.0;
+GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
+GLdouble zNear = 0.01;
+GLdouble zFar = 1000.0;
+float camX = 0.0;
+float camY = 7.0; //lw 3ayez aknak btbos odam decrease this val, lw aknek btwaty rasek increase this val
+float camZ = 30.0;
+Vector Eye(camX, camY, camZ);
+Vector At(0, 0, 0);
+Vector Up(0, 1, 0);
+int cameraZoom = 0;
+#pragma endregion
 
 //game data
 #pragma region
@@ -95,13 +117,18 @@ CameraMode cameraMode = thirdPerson;
 Vector carPosition(0, 0, 15);
 float MIN_X = -10.0f;
 float MAX_X = 10.0f;
-float moveSpeed = 5.0f;
+float moveSpeed = 15.0f;
 float timeRemaining = 40.0f;
 #pragma endregion
 
 //collectables data
 #pragma region
 std::vector<Collectable> collectables;
+#pragma endregion
+
+//obstacles data
+#pragma region
+std::vector<Obstacle> obstacles;
 #pragma endregion
 
 //signs data
@@ -113,22 +140,6 @@ const float REMOVE_DISTANCE = 10.0f;
 float spawnTimer = 0.0f;
 const float spawnInterval = 1.5f;
 #pragma endregion
-
-//Camera Settings
-#pragma region 
-GLdouble fovy = 45.0;
-GLdouble aspectRatio = (GLdouble)xCord / (GLdouble)yCord;
-GLdouble zNear = 0.01;
-GLdouble zFar = 1000.0;
-float camX = 0.0;
-float camY = 7.0; //lw 3ayez aknak btbos odam decrease this val, lw aknek btwaty rasek increase this val
-float camZ = 30.0;
-Vector Eye(camX, camY, camZ);
-Vector At(0, 0, 0);
-Vector Up(0, 1, 0);
-#pragma endregion
-
-int cameraZoom = 0;
 
 //methods declarations
 #pragma region
@@ -145,15 +156,51 @@ void playSound(const char* soundFile, bool loop);
 void Render2DText(int score, bool gameWin, bool gameLose);
 void DrawSkyBox();
 void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation);
-void spawnCollectables();
+void SpawnCollectables();
+void UpdateCollectables(float deltaTime);
 void RenderGround();
 bool isOverlapping(const Vector& newPosition);
 void SpawnSign();
 void UpdateSigns(float deltaTime);
 void DrawSigns();
-void myMotion(int x, int y);	
 void myMouse(int button, int state, int x, int y);
+void myMotion(int x, int y);
 #pragma endregion
+
+bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable) {
+	float distance = sqrt(pow(carPos.x - collectable.position.x, 2) + pow(carPos.z - collectable.position.z - 15, 2));
+	return distance < 8;
+}
+
+bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
+	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 10, 2));
+	return distance < 8;
+}
+
+void CheckAndHandleObstacleCollisions() {
+	for (auto& obstacle : obstacles) {
+		if (obstacle.effective && CheckCollisionWithObstacle(carPosition, obstacle)) {
+			lives -= 1;
+			obstacle.effective = false;
+		}
+	}
+}
+
+void CheckAndHandleCollisions() {
+	for (auto it = collectables.begin(); it != collectables.end();) {
+		if (CheckCollisionWithCollectable(carPosition, *it)) {
+			scoreScene1 += 10;
+			it->isVisible = false;
+
+			it = collectables.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+
+	CheckAndHandleObstacleCollisions();
+}
 
 void SpawnSign() {
 	Sign newSign;
@@ -182,6 +229,85 @@ void UpdateSigns(float deltaTime) {
 
 		if (it->position.z > REMOVE_DISTANCE) {
 			it = signPositions.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+}
+
+void DrawSigns() {
+	for (const auto& sign : signPositions) {
+		switch (sign.type) {
+		case 0:
+			DrawModel(model_sign_stop, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
+			break;
+		case 1:
+			DrawModel(model_sign_oneway, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
+			break;
+		case 2:
+			DrawModel(model_sign_pedestrian, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 20, 0));
+			break;
+		}
+	}
+}
+
+void SpawnCollectables() {
+	Collectable newCollectable;
+
+	newCollectable.position = Vector((rand() % 21) - 10, 0, -SPAWN_DISTANCE);
+
+	newCollectable.model = model_tank;
+	collectables.push_back(newCollectable);
+}
+
+void SpawnObstacle() {
+	Obstacle newObstacle;
+
+	newObstacle.position = Vector(rand() % 21 - 10, 0, -SPAWN_DISTANCE);
+
+	while (isOverlapping(newObstacle.position)) {
+		newObstacle.position = Vector(rand() % 21 - 10, 0, -SPAWN_DISTANCE);
+	}
+
+	newObstacle.model = model_obstacle;
+	obstacles.push_back(newObstacle);
+}
+
+void UpdateCollectables(float deltaTime) {
+	spawnTimer += deltaTime;
+
+	if (spawnTimer >= spawnInterval) {
+		SpawnCollectables();
+		spawnTimer = 0.0f;
+	}
+	for (auto it = collectables.begin(); it != collectables.end();) {
+		it->position.z += moveSpeed * deltaTime;
+
+		if (it->position.z > REMOVE_DISTANCE) {
+			it = collectables.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+}
+
+void UpdateObstacles(float deltaTime) {
+	static float spawnTimer = 0.0f;
+	const float spawnInterval = 3.0f;
+
+	spawnTimer += deltaTime;
+	if (spawnTimer >= spawnInterval) {
+		SpawnObstacle();
+		spawnTimer = 0.0f;
+	}
+
+	for (auto it = obstacles.begin(); it != obstacles.end();) {
+		it->position.z += moveSpeed * deltaTime;
+
+		if (it->position.z > REMOVE_DISTANCE) {
+			it = obstacles.erase(it);
 		}
 		else {
 			++it;
@@ -225,7 +351,7 @@ void RenderHeadlights() {
 	glTranslatef(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
 
 	// Set the position and properties for the right headlight light source
-	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z -20.0f, 1.0f };  // Homogeneous coordinates
+	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 20.0f, 1.0f };  // Homogeneous coordinates
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
@@ -253,22 +379,6 @@ void RenderHeadlights() {
 	glPopMatrix();
 }
 
-void DrawSigns() {
-	for (const auto& sign : signPositions) {
-		switch (sign.type) {
-		case 0:
-			DrawModel(model_sign_stop, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
-			break;
-		case 1:
-			DrawModel(model_sign_oneway, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 0, 0));
-			break;
-		case 2:
-			DrawModel(model_sign_pedestrian, sign.position, Vector(0.1f, 0.1f, 0.1f), Vector(0, 20, 0));
-			break;
-		}
-	}
-}
-
 void RenderRoadSegment(float zPosition) {
 	glPushMatrix();
 	glTranslatef(0, 0, zPosition);
@@ -276,7 +386,8 @@ void RenderRoadSegment(float zPosition) {
 	glPopMatrix();
 }
 
-void myDisplay1() {
+void myDisplay1()
+{
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
@@ -284,30 +395,37 @@ void myDisplay1() {
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
-	
 	glPushMatrix();
 	glTranslatef(0, 0, +moveSpeed);
+
+	// ground
 	RenderGround();
+
 	// tank model
 	for (const auto& collectable : collectables) {
 		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 0, 0));
 	}
 
+
+	for (const auto& obstacle : obstacles) {
+		DrawModel(model_obstacle, obstacle.position, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+	}
+
+
 	DrawSigns();
 
-	// skybox
+	//sky box
 	DrawSkyBox();
 
 	glPopMatrix();
 
+	// car model
 	RenderHeadlights();
 	// Draw the car model
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 
-	// Render 2D UI elements (score)
 	Render2DText(scoreScene1, false, false);
 
-	// Swap the buffers to display the updated frame
 	glutSwapBuffers();
 }
 
@@ -345,7 +463,7 @@ void LoadScene2() {
 }
 
 void timer(int value) {
-	moveSpeed += 0.3f;
+	//moveSpeed += 0.3f;
 	timeRemaining -= 0.1f;
 
 	if (timeRemaining == 20) {
@@ -355,10 +473,12 @@ void timer(int value) {
 	if (timeRemaining <= 0) {
 		gameOver = true;
 	}
-	/*if (rand() % 50 == 0) {
-		spawnCollectables();
-	}*/
+
+	CheckAndHandleCollisions();
+
 	UpdateSigns(0.1f);
+	UpdateCollectables(0.1f);
+	UpdateObstacles(0.1f);
 
 	glutPostRedisplay();
 
@@ -391,18 +511,41 @@ void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, co
 	glPopMatrix();
 }
 
-void spawnCollectables() {
-	Vector randomPosition((rand() % 17) - 8, 0, (rand() % 36) - 30);
+void myMotion(int x, int y)
+{
+	y = yCord - y;
 
-	if (isOverlapping(randomPosition)) {
-		return;
+	if (cameraZoom - y > 0)
+	{
+		Eye.x += -0.1;
+		Eye.z += -0.1;
+	}
+	else
+	{
+		Eye.x += 0.1;
+		Eye.z += 0.1;
 	}
 
-	Collectable newCollectable;
-	newCollectable.position = randomPosition;
-	newCollectable.model = model_tank;
+	cameraZoom = y;
 
-	collectables.push_back(newCollectable);
+	glLoadIdentity();
+
+	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
+
+	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+	glutPostRedisplay();	//Re-draw scene 
+}
+
+void myMouse(int button, int state, int x, int y)
+{
+	y = yCord - y;
+
+	if (state == GLUT_DOWN)
+	{
+		cameraZoom = y;
+	}
 }
 
 bool isOverlapping(const Vector& newPosition) {
@@ -499,6 +642,7 @@ void RenderGround()
 	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
 
 	glPushMatrix();
+	//glTranslatef(0, 0, +moveSpeed);
 	glBegin(GL_QUADS);
 	glNormal3f(0, 1, 0);
 	glTexCoord2f(0, 0);
@@ -595,8 +739,6 @@ void myReshape(int w, int h)
 
 void LoadAssets()
 {
-	RenderGround();
-
 	// Loading Model files
 	model_house.Load("Models/house/house.3ds");
 	model_tree.Load("Models/tree/Tree1.3ds");
@@ -606,9 +748,10 @@ void LoadAssets()
 	model_sign_oneway.Load("Models/road-signs/neuro_oneway_3ds.3ds");
 	model_sign_pedestrian.Load("Models/road-signs/neuro_pedestrian_3ds.3ds");
 	model_tank.Load("Models/tank/gasContain.3ds");
+	model_obstacle.Load("Models/barrier/Road Barrier 01/Road Barrier 01a.3ds");
 	//model_building.Load("Models/building/Building_italian.3ds");
 	//model_building2.Load("Models/building2/Building.3DS");
-	//barrier.Load("Models/barrier/barrier.3ds");
+
 	// Loading texture files
 	tex_ground.Load("Textures/road1.bmp");
 
@@ -688,7 +831,7 @@ void Render2DText(int score, bool gameWin, bool gameLose) {
 	else {
 		glColor3f(0.0f, 0.0f, 0.0f);
 		glRasterPos2f(50.0f, 530.0f);
-		std::string scoreText = "Score: " + std::to_string(score) + " / " + std::to_string(maxScore);
+		std::string scoreText = "Score: " + std::to_string(score);
 		for (char c : scoreText) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
 		}
@@ -726,41 +869,4 @@ void DrawSkyBox() {
 	gluSphere(qobj, 500, 100, 100);
 	gluDeleteQuadric(qobj);
 	glPopMatrix();
-}
-
-void myMotion(int x, int y)
-{
-	y = yCord - y;
-
-	if (cameraZoom - y > 0)
-	{
-		Eye.x += -0.1;
-		Eye.z += -0.1;
-	}
-	else
-	{
-		Eye.x += 0.1;
-		Eye.z += 0.1;
-	}
-
-	cameraZoom = y;
-
-	glLoadIdentity();
-
-	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
-
-	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-
-	glutPostRedisplay();	//Re-draw scene 
-}
-
-void myMouse(int button, int state, int x, int y)
-{
-	y = yCord - y;
-
-	if (state == GLUT_DOWN)
-	{
-		cameraZoom = y;
-	}
 }
