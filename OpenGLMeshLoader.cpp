@@ -175,7 +175,7 @@ bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& coll
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
 	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 10, 2));
-	return distance < 2.5;	
+	return distance < 2.5;
 }
 
 void CheckAndHandleObstacleCollisions() {
@@ -430,6 +430,7 @@ void myDisplay1()
 
 	glutSwapBuffers();
 }
+
 void DrawModelWithBoundingBox() {
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 
