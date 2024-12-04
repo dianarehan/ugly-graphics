@@ -151,6 +151,8 @@ bool isOverlapping(const Vector& newPosition);
 void SpawnSign();
 void UpdateSigns(float deltaTime);
 void DrawSigns();
+void myMotion(int x, int y);	
+void myMouse(int button, int state, int x, int y);
 #pragma endregion
 
 void SpawnSign() {
@@ -185,24 +187,6 @@ void UpdateSigns(float deltaTime) {
 			++it;
 		}
 	}
-}
-
-void RenderLightVolume(GLfloat x, GLfloat y, GLfloat z, GLfloat radius) {
-	glPushMatrix();
-	glTranslatef(x, y, z);
-
-	// Enable blending for transparency
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// Render a semi-transparent sphere
-	glColor4f(1.0f, 1.0f, 0.5f, 0.3f);  // Light yellow with transparency
-	glutSolidSphere(radius, 20, 20);
-
-	// Disable blending
-	glDisable(GL_BLEND);
-
-	glPopMatrix();
 }
 
 void RenderHeadlights() {
@@ -255,12 +239,10 @@ void RenderHeadlights() {
 
 	glLightfv(GL_LIGHT0, GL_POSITION, leftLightPosition);
 	glEnable(GL_LIGHT0);
-	RenderLightVolume(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 15.0f, 0.5f);
 
 	// Right headlight
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
 	glEnable(GL_LIGHT1);
-	RenderLightVolume(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 7.5f, 0.5f);
 
 	// Render visual spheres for headlights
 	glDisable(GL_LIGHTING);
@@ -287,21 +269,25 @@ void DrawSigns() {
 	}
 }
 
+void RenderRoadSegment(float zPosition) {
+	glPushMatrix();
+	glTranslatef(0, 0, zPosition);
+	RenderGround();
+	glPopMatrix();
+}
+
 void myDisplay1() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	/*GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);*/
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
 	
 	glPushMatrix();
 	glTranslatef(0, 0, +moveSpeed);
-
-	// ground
 	RenderGround();
-
 	// tank model
 	for (const auto& collectable : collectables) {
 		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 0, 0));
@@ -313,7 +299,6 @@ void myDisplay1() {
 	DrawSkyBox();
 
 	glPopMatrix();
-
 
 	RenderHeadlights();
 	// Draw the car model
@@ -355,43 +340,6 @@ void myDisplay2(void) {
 	glutSwapBuffers();
 }
 
-void myMotion(int x, int y)
-{
-	y = yCord - y;
-
-	if (cameraZoom - y > 0)
-	{
-		Eye.x += -0.1;
-		Eye.z += -0.1;
-	}
-	else
-	{
-		Eye.x += 0.1;
-		Eye.z += 0.1;
-	}
-
-	cameraZoom = y;
-
-	glLoadIdentity();
-
-	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
-
-	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-
-	glutPostRedisplay();	//Re-draw scene 
-}
-
-void myMouse(int button, int state, int x, int y)
-{
-	y = yCord - y;
-
-	if (state == GLUT_DOWN)
-	{
-		cameraZoom = y;
-	}
-}
-
 void LoadScene2() {
 	tex_ground.Load("Textures/ground.bmp");
 }
@@ -410,7 +358,6 @@ void timer(int value) {
 	/*if (rand() % 50 == 0) {
 		spawnCollectables();
 	}*/
-
 	UpdateSigns(0.1f);
 
 	glutPostRedisplay();
@@ -779,4 +726,41 @@ void DrawSkyBox() {
 	gluSphere(qobj, 500, 100, 100);
 	gluDeleteQuadric(qobj);
 	glPopMatrix();
+}
+
+void myMotion(int x, int y)
+{
+	y = yCord - y;
+
+	if (cameraZoom - y > 0)
+	{
+		Eye.x += -0.1;
+		Eye.z += -0.1;
+	}
+	else
+	{
+		Eye.x += 0.1;
+		Eye.z += 0.1;
+	}
+
+	cameraZoom = y;
+
+	glLoadIdentity();
+
+	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
+
+	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+	glutPostRedisplay();	//Re-draw scene 
+}
+
+void myMouse(int button, int state, int x, int y)
+{
+	y = yCord - y;
+
+	if (state == GLUT_DOWN)
+	{
+		cameraZoom = y;
+	}
 }
