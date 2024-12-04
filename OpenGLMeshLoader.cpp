@@ -165,6 +165,7 @@ void UpdateSigns(float deltaTime);
 void DrawSigns();
 void myMouse(int button, int state, int x, int y);
 void myMotion(int x, int y);
+void DrawModelWithBoundingBox();
 #pragma endregion
 
 bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable) {
@@ -174,7 +175,7 @@ bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& coll
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
 	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 10, 2));
-	return distance < 8;
+	return distance < 2.5;	
 }
 
 void CheckAndHandleObstacleCollisions() {
@@ -423,10 +424,70 @@ void myDisplay1()
 	RenderHeadlights();
 	// Draw the car model
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+	//DrawModelWithBoundingBox();
 
 	Render2DText(scoreScene1, false, false);
 
 	glutSwapBuffers();
+}
+void DrawModelWithBoundingBox() {
+	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+
+	float carWidth = 2.5f;
+	float carHeight = 1.5f;
+	float carLength = 6.5f;
+
+	float carLeft = carPosition.x - carWidth / 2;
+	float carRight = carPosition.x + carWidth / 2;
+	float carBottom = carPosition.y; // Assuming ground level
+	float carTop = carPosition.y + carHeight;
+	float carFront = carPosition.z + carLength / 2;
+	float carBack = carPosition.z - carLength / 2;
+
+	// Draw the bounding box as a wireframe
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glBegin(GL_LINES);
+
+	// Bottom rectangle
+	glVertex3f(carLeft, carBottom, carFront);
+	glVertex3f(carRight, carBottom, carFront);
+
+	glVertex3f(carRight, carBottom, carFront);
+	glVertex3f(carRight, carBottom, carBack);
+
+	glVertex3f(carRight, carBottom, carBack);
+	glVertex3f(carLeft, carBottom, carBack);
+
+	glVertex3f(carLeft, carBottom, carBack);
+	glVertex3f(carLeft, carBottom, carFront);
+
+	// Top rectangle
+	glVertex3f(carLeft, carTop, carFront);
+	glVertex3f(carRight, carTop, carFront);
+
+	glVertex3f(carRight, carTop, carFront);
+	glVertex3f(carRight, carTop, carBack);
+
+	glVertex3f(carRight, carTop, carBack);
+	glVertex3f(carLeft, carTop, carBack);
+
+	glVertex3f(carLeft, carTop, carBack);
+	glVertex3f(carLeft, carTop, carFront);
+
+	// Vertical lines connecting top and bottom
+	glVertex3f(carLeft, carBottom, carFront);
+	glVertex3f(carLeft, carTop, carFront);
+
+	glVertex3f(carRight, carBottom, carFront);
+	glVertex3f(carRight, carTop, carFront);
+
+	glVertex3f(carRight, carBottom, carBack);
+	glVertex3f(carRight, carTop, carBack);
+
+	glVertex3f(carLeft, carBottom, carBack);
+	glVertex3f(carLeft, carTop, carBack);
+
+	glEnd();
 }
 
 void myDisplay2(void) {
