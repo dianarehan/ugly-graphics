@@ -167,7 +167,181 @@ void DrawSigns();
 void myMouse(int button, int state, int x, int y);
 void myMotion(int x, int y);
 void DrawModelWithBoundingBox();
+void InitializeRoad();
+void UpdateRoad(float deltaTime, float playerPositionZ);
+void RenderRoad();
+void RenderRoadSegment(float zPosition);
+void CheckAndHandleCollisions();
+bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable);
+void CheckAndHandleObstacleCollisions();
+bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle);
+void UpdateObstacles(float deltaTime);
+void SpawnObstacle();
+void RenderHeadlights();
+void mySpecialKeyboard(int key, int x, int y);
+void timer(int value);
+void DisplaySceneOne();
+void DisplaySceneTwo();
+void LoadScene2();
 #pragma endregion
+
+//road data
+#pragma region
+std::vector<float> roadSegments; 
+const int NUM_ROAD_SEGMENTS = 10;
+const float ROAD_SEGMENT_LENGTH = 22.0f;
+const float SPAWN_DISTANCE2 = 100.0f;
+#pragma endregion
+
+void DisplaySceneOne()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
+	glPushMatrix();
+	glTranslatef(0, 0, +moveSpeed);
+
+	// ground
+	RenderRoad();
+
+	// tank model
+	for (const auto& collectable : collectables) {
+		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 90, 0));
+	}
+
+
+	for (const auto& obstacle : obstacles) {
+		DrawModel(model_obstacle, obstacle.position, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+	}
+
+
+	DrawSigns();
+
+	//sky box
+	DrawSkyBox();
+
+	glPopMatrix();
+
+	// car model
+	RenderHeadlights();
+	// Draw the car model
+	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+	//DrawModelWithBoundingBox();
+
+	Render2DText(scoreScene1, false, false);
+
+	glutSwapBuffers();
+}
+
+void DisplaySceneTwo(void) {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
+	RenderGround();
+
+	// car
+	DrawModel(model_car, Vector(0, 0, 15), Vector(1.4f, 1.5f, 1.5f), Vector(0, 180, 0));
+
+	// tree model
+	DrawModel(model_tree, Vector(10, 0, 0), Vector(0.7, 0.7, 0.7), Vector(0, 0, 0));
+
+	// house model
+	DrawModel(model_house, Vector(0, 0, 0), Vector(1, 1, 1), Vector(90, 0, 0));
+
+	// pizza
+	DrawModel(model_pizza, Vector(10, 10, 10), Vector(0.008, 0.008, 0.008), Vector(0, 0, -90));
+
+	DrawSkyBox();
+
+	Render2DText(scoreScene2, false, false);
+
+	glutSwapBuffers();
+}
+
+void LoadScene2() {
+	tex_ground.Load("Textures/ground.bmp");
+}
+
+void timer(int value) {
+	timeRemaining -= 0.1f;
+
+	if (timeRemaining == 20) {
+		currentScene = scene2;
+		LoadScene2();
+	}
+	if (timeRemaining <= 0) {
+		gameOver = true;
+	}
+
+	CheckAndHandleCollisions();
+	UpdateRoad(0.1f, carPosition.z);
+	UpdateSigns(0.1f);
+	UpdateCollectables(0.1f);
+	UpdateObstacles(0.1f);
+
+	glutPostRedisplay();
+
+	glutTimerFunc(100, timer, 0);
+}
+
+void main(int argc, char** argv)
+{
+	InitializeGLUT(argc, argv);
+	RegisterCallbacks();
+	glutTimerFunc(100, timer, 0);
+	myInit();
+	InitializeRoad();
+	LoadAssets();
+	EnableOpenGLFeatures();
+	if (!backgroundSound)
+		backgroundSound = engine->play2D("sounds/bg_sound.wav", true, false, true);
+	if(!carSound)
+		carSound = engine->play2D("sounds/car moving.wav", true, false, true);
+	glutMainLoop();
+	engine->drop();
+}
+
+void RenderRoadSegment(float zPosition) {
+	glPushMatrix();
+	glTranslatef(0, 0, zPosition);
+	RenderGround();
+	glPopMatrix();
+}
+
+void InitializeRoad() {
+	roadSegments.clear();
+
+	for (int i = 0; i < NUM_ROAD_SEGMENTS; ++i) {
+		float zPosition = -SPAWN_DISTANCE2 + (i * ROAD_SEGMENT_LENGTH);
+		roadSegments.push_back(zPosition);
+	}
+}
+
+void UpdateRoad(float deltaTime, float playerPositionZ) {
+	for (auto& segment : roadSegments) {
+		segment += moveSpeed * deltaTime;
+	}
+
+	for (auto& segment : roadSegments) {
+		if (segment > playerPositionZ + SPAWN_DISTANCE2) {
+			segment = playerPositionZ - SPAWN_DISTANCE2 - ROAD_SEGMENT_LENGTH;
+		}
+	}
+}
+
+void RenderRoad() {
+	for (const auto& segmentZ : roadSegments) {
+		RenderRoadSegment(segmentZ);
+	}
+}
 
 bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable) {
 	float distance = sqrt(pow(carPos.x - collectable.position.x, 2) + pow(carPos.z - collectable.position.z - 15, 2));
@@ -175,7 +349,7 @@ bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& coll
 }
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
-	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z -20 , 2));
+	float distance = sqrt(pow(carPos.x - obstacle.position.x, 2) + pow(carPos.z - obstacle.position.z - 20, 2));
 	return distance < 2.5;
 }
 
@@ -210,10 +384,10 @@ void SpawnSign() {
 	Sign newSign;
 
 	if (rand() % 2 == 0) {
-		newSign.position = Vector(rand() % 2 + 2*MIN_X, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 2 + 2 * MIN_X, 0, -SPAWN_DISTANCE);
 	}
 	else {
-		newSign.position = Vector(rand() % 3 +2*MAX_X , 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 3 + 2 * MAX_X, 0, -SPAWN_DISTANCE);
 	}
 
 	newSign.type = rand() % 3;
@@ -319,6 +493,67 @@ void UpdateObstacles(float deltaTime) {
 	}
 }
 
+//define the dimensions of objects lmao
+void DrawModelWithBoundingBox() {
+	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+
+	float carWidth = 2.5f;
+	float carHeight = 1.5f;
+	float carLength = 6.5f;
+
+	float carLeft = carPosition.x - carWidth / 2;
+	float carRight = carPosition.x + carWidth / 2;
+	float carBottom = carPosition.y; // Assuming ground level
+	float carTop = carPosition.y + carHeight;
+	float carFront = carPosition.z + carLength / 2;
+	float carBack = carPosition.z - carLength / 2;
+
+	// Draw the bounding box as a wireframe
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glBegin(GL_LINES);
+
+	// Bottom rectangle
+	glVertex3f(carLeft, carBottom, carFront);
+	glVertex3f(carRight, carBottom, carFront);
+
+	glVertex3f(carRight, carBottom, carFront);
+	glVertex3f(carRight, carBottom, carBack);
+
+	glVertex3f(carRight, carBottom, carBack);
+	glVertex3f(carLeft, carBottom, carBack);
+
+	glVertex3f(carLeft, carBottom, carBack);
+	glVertex3f(carLeft, carBottom, carFront);
+
+	// Top rectangle
+	glVertex3f(carLeft, carTop, carFront);
+	glVertex3f(carRight, carTop, carFront);
+
+	glVertex3f(carRight, carTop, carFront);
+	glVertex3f(carRight, carTop, carBack);
+
+	glVertex3f(carRight, carTop, carBack);
+	glVertex3f(carLeft, carTop, carBack);
+
+	glVertex3f(carLeft, carTop, carBack);
+	glVertex3f(carLeft, carTop, carFront);
+
+	// Vertical lines connecting top and bottom
+	glVertex3f(carLeft, carBottom, carFront);
+	glVertex3f(carLeft, carTop, carFront);
+
+	glVertex3f(carRight, carBottom, carFront);
+	glVertex3f(carRight, carTop, carFront);
+
+	glVertex3f(carRight, carBottom, carBack);
+	glVertex3f(carRight, carTop, carBack);
+
+	glVertex3f(carLeft, carBottom, carBack);
+	glVertex3f(carLeft, carTop, carBack);
+
+	glEnd();
+}
+
 void RenderHeadlights() {
 	// Enable lighting
 	glEnable(GL_LIGHTING);
@@ -381,189 +616,6 @@ void RenderHeadlights() {
 	glutSolidSphere(0.1, 10, 10);
 	glEnable(GL_LIGHTING);
 	glPopMatrix();
-}
-
-void RenderRoadSegment(float zPosition) {
-	glPushMatrix();
-	glTranslatef(0, 0, zPosition);
-	RenderGround();
-	glPopMatrix();
-}
-
-void myDisplay1()
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
-	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
-
-	glPushMatrix();
-	glTranslatef(0, 0, +moveSpeed);
-
-	// ground
-	RenderGround();
-
-	// tank model
-	for (const auto& collectable : collectables) {
-		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 90, 0));
-	}
-
-
-	for (const auto& obstacle : obstacles) {
-		DrawModel(model_obstacle, obstacle.position, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
-	}
-
-
-	DrawSigns();
-
-	//sky box
-	DrawSkyBox();
-
-	glPopMatrix();
-
-	// car model
-	RenderHeadlights();
-	// Draw the car model
-	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
-	//DrawModelWithBoundingBox();
-
-	Render2DText(scoreScene1, false, false);
-
-	glutSwapBuffers();
-}
-
-void DrawModelWithBoundingBox() {
-	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
-
-	float carWidth = 2.5f;
-	float carHeight = 1.5f;
-	float carLength = 6.5f;
-
-	float carLeft = carPosition.x - carWidth / 2;
-	float carRight = carPosition.x + carWidth / 2;
-	float carBottom = carPosition.y; // Assuming ground level
-	float carTop = carPosition.y + carHeight;
-	float carFront = carPosition.z + carLength / 2;
-	float carBack = carPosition.z - carLength / 2;
-
-	// Draw the bounding box as a wireframe
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glBegin(GL_LINES);
-
-	// Bottom rectangle
-	glVertex3f(carLeft, carBottom, carFront);
-	glVertex3f(carRight, carBottom, carFront);
-
-	glVertex3f(carRight, carBottom, carFront);
-	glVertex3f(carRight, carBottom, carBack);
-
-	glVertex3f(carRight, carBottom, carBack);
-	glVertex3f(carLeft, carBottom, carBack);
-
-	glVertex3f(carLeft, carBottom, carBack);
-	glVertex3f(carLeft, carBottom, carFront);
-
-	// Top rectangle
-	glVertex3f(carLeft, carTop, carFront);
-	glVertex3f(carRight, carTop, carFront);
-
-	glVertex3f(carRight, carTop, carFront);
-	glVertex3f(carRight, carTop, carBack);
-
-	glVertex3f(carRight, carTop, carBack);
-	glVertex3f(carLeft, carTop, carBack);
-
-	glVertex3f(carLeft, carTop, carBack);
-	glVertex3f(carLeft, carTop, carFront);
-
-	// Vertical lines connecting top and bottom
-	glVertex3f(carLeft, carBottom, carFront);
-	glVertex3f(carLeft, carTop, carFront);
-
-	glVertex3f(carRight, carBottom, carFront);
-	glVertex3f(carRight, carTop, carFront);
-
-	glVertex3f(carRight, carBottom, carBack);
-	glVertex3f(carRight, carTop, carBack);
-
-	glVertex3f(carLeft, carBottom, carBack);
-	glVertex3f(carLeft, carTop, carBack);
-
-	glEnd();
-}
-
-void myDisplay2(void) {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
-	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
-
-	RenderGround();
-
-	// car
-	DrawModel(model_car, Vector(0, 0, 15), Vector(1.4f, 1.5f, 1.5f), Vector(0, 180, 0));
-
-	// tree model
-	DrawModel(model_tree, Vector(10, 0, 0), Vector(0.7, 0.7, 0.7), Vector(0, 0, 0));
-
-	// house model
-	DrawModel(model_house, Vector(0, 0, 0), Vector(1, 1, 1), Vector(90, 0, 0));
-
-	// pizza
-	DrawModel(model_pizza, Vector(10, 10, 10), Vector(0.008, 0.008, 0.008), Vector(0, 0, -90));
-
-	DrawSkyBox();
-
-	Render2DText(scoreScene2, false, false);
-
-	glutSwapBuffers();
-}
-
-void LoadScene2() {
-	tex_ground.Load("Textures/ground.bmp");
-}
-
-void timer(int value) {
-	//moveSpeed += 0.3f;
-	timeRemaining -= 0.1f;
-
-	if (timeRemaining == 20) {
-		currentScene = scene2;
-		LoadScene2();
-	}
-	if (timeRemaining <= 0) {
-		gameOver = true;
-	}
-
-	CheckAndHandleCollisions();
-
-	UpdateSigns(0.1f);
-	UpdateCollectables(0.1f);
-	UpdateObstacles(0.1f);
-
-	glutPostRedisplay();
-
-	glutTimerFunc(100, timer, 0);
-}
-
-void main(int argc, char** argv)
-{
-	InitializeGLUT(argc, argv);
-	RegisterCallbacks();
-	glutTimerFunc(100, timer, 0);
-	myInit();
-	LoadAssets();
-	EnableOpenGLFeatures();
-	if (!backgroundSound)
-		backgroundSound = engine->play2D("sounds/bg_sound.wav", true, false, true);
-	if(!carSound)
-		carSound = engine->play2D("sounds/car moving.wav", true, false, true);
-	glutMainLoop();
-	engine->drop();
 }
 
 void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation)
@@ -837,10 +889,10 @@ void InitializeGLUT(int argc, char** argv)
 void RegisterCallbacks()
 {
 	if (currentScene == scene1) {
-		glutDisplayFunc(myDisplay1);
+		glutDisplayFunc(DisplaySceneOne);
 	}
 	else {
-		glutDisplayFunc(myDisplay2);
+		glutDisplayFunc(DisplaySceneTwo);
 	}
 	glutKeyboardFunc(myKeyboard);
 	glutSpecialFunc(mySpecialKeyboard);
