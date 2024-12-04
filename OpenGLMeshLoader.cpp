@@ -99,6 +99,8 @@ float camZ = 30.0;
 Vector Eye(camX, camY, camZ);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
+Vector Eye2(0, 1, 4);
+Vector At2(0, 0, 0);
 int cameraZoom = 0;
 #pragma endregion
 
@@ -694,9 +696,17 @@ void myKeyboard(unsigned char button, int x, int y)
 	case 'r':
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		break;
-	case 27:
-		exit(0);
+	case 'p':
+		if (cameraMode == thirdPerson) {
+			cameraMode = firstPerson;
+			gluLookAt(Eye2.x, Eye2.y, Eye2.z, At2.x, At2.y, At2.z, Up.x, Up.y, Up.z);
+		}
+		else {
+			cameraMode = thirdPerson;
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
 		break;
+
 	default:
 		break;
 	}
