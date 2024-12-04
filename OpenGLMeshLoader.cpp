@@ -169,7 +169,7 @@ void myMotion(int x, int y);
 
 bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable) {
 	float distance = sqrt(pow(carPos.x - collectable.position.x, 2) + pow(carPos.z - collectable.position.z - 15, 2));
-	return distance < 8;
+	return distance < 2.5;
 }
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
@@ -403,7 +403,7 @@ void myDisplay1()
 
 	// tank model
 	for (const auto& collectable : collectables) {
-		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 0, 0));
+		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 90, 0));
 	}
 
 
