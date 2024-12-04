@@ -28,7 +28,6 @@ Model_3DS model_sign_oneway;
 Model_3DS model_sign_pedestrian;
 Model_3DS model_tank;
 Model_3DS model_building;
-Model_3DS model_building2;
 Model_3DS model_obstacle;
 #pragma endregion
 
@@ -195,6 +194,43 @@ const float ROAD_SEGMENT_LENGTH = 38.0f;
 const float SPAWN_DISTANCE2 = 100.0f;
 #pragma endregion
 
+//buildings data
+#pragma region
+std::vector<Vector> buildingPositions;
+const float BUILDING_SPACING = 30.0f;
+const float BUILDING_OFFSET_X = 20.0f;
+const int NUM_BUILDINGS = 10;
+const float BUILDING_REUSE_DISTANCE = 100.0f;
+#pragma endregion
+
+void InitializeBuildings() {
+	buildingPositions.clear();
+
+	for (int i = 0; i < NUM_BUILDINGS; ++i) {
+		float zPosition = -SPAWN_DISTANCE2 + (i * BUILDING_SPACING);
+
+		buildingPositions.push_back(Vector(-BUILDING_OFFSET_X, 0, zPosition));
+
+		buildingPositions.push_back(Vector(BUILDING_OFFSET_X, 0, zPosition));
+	}
+}
+
+void UpdateBuildings(float deltaTime, float carZ) {
+    for (auto& position : buildingPositions) {
+        position.z += moveSpeed * deltaTime;
+
+        if (position.z > carZ + REMOVE_DISTANCE) {
+            position.z -= NUM_BUILDINGS * BUILDING_SPACING;
+        }
+    }
+}
+
+void RenderBuildings() {
+	for (const auto& position : buildingPositions) {
+		DrawModel(model_building, position, Vector(0.01f, 0.03f, 0.01f), Vector(0, 0, 0));
+	}
+}
+
 void DisplaySceneOne()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -209,7 +245,7 @@ void DisplaySceneOne()
 
 	// ground
 	RenderRoad();
-
+	RenderBuildings();
 	// tank model
 	for (const auto& collectable : collectables) {
 		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 90, 0));
@@ -227,6 +263,8 @@ void DisplaySceneOne()
 	DrawSkyBox();
 
 	glPopMatrix();
+	//DrawModel(model_building, Vector(-20, 0, -5), Vector(0.01, 0.03, 0.01), Vector(0, 0, 0));
+	//DrawModel(model_building, Vector(20, 0, -5), Vector(0.01, 0.04, 0.01), Vector(0, 0, 0));
 
 	// car model
 	RenderHeadlights();
@@ -284,6 +322,7 @@ void timer(int value) {
 	}
 
 	CheckAndHandleCollisions();
+	UpdateBuildings(0.1, carPosition.z);
 	UpdateRoad(0.1f, carPosition.z);
 	UpdateSigns(0.1f);
 	UpdateCollectables(0.1f);
@@ -300,6 +339,7 @@ void main(int argc, char** argv)
 	RegisterCallbacks();
 	glutTimerFunc(100, timer, 0);
 	myInit();
+	InitializeBuildings();
 	InitializeRoad();
 	LoadAssets();
 	EnableOpenGLFeatures();
@@ -386,10 +426,10 @@ void SpawnSign() {
 	Sign newSign;
 
 	if (rand() % 2 == 0) {
-		newSign.position = Vector(rand() % 2 + 2 * MIN_X, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 2 + 1.5* MIN_X, 0, -SPAWN_DISTANCE);
 	}
 	else {
-		newSign.position = Vector(rand() % 3 + 2 * MAX_X, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 3 +  MAX_X, 0, -SPAWN_DISTANCE);
 	}
 
 	newSign.type = rand() % 3;
@@ -878,7 +918,7 @@ void LoadAssets()
 	model_sign_pedestrian.Load("Models/road-signs/neuro_pedestrian_3ds.3ds");
 	model_tank.Load("Models/tank/gasContain.3ds");
 	model_obstacle.Load("Models/barrier/Road Barrier 01/Road Barrier 01a.3ds");
-	//model_building.Load("Models/building/Building_italian.3ds");
+	model_building.Load("Models/building/BUILDINGS.3ds");
 	//model_building2.Load("Models/building2/Building.3DS");
 
 	// Loading texture files
