@@ -189,7 +189,7 @@ void LoadScene2();
 #pragma region
 std::vector<float> roadSegments; 
 const int NUM_ROAD_SEGMENTS = 10;
-const float ROAD_SEGMENT_LENGTH = 22.0f;
+const float ROAD_SEGMENT_LENGTH = 38.0f;
 const float SPAWN_DISTANCE2 = 100.0f;
 #pragma endregion
 
