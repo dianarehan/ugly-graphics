@@ -171,7 +171,7 @@ void DrawModelWithBoundingBox();
 
 bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable) {
 	float distance = sqrt(pow(carPos.x - collectable.position.x, 2) + pow(carPos.z - collectable.position.z - 15, 2));
-	return distance < 2.5;
+	return distance < 2.21;
 }
 
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) {
@@ -210,10 +210,10 @@ void SpawnSign() {
 	Sign newSign;
 
 	if (rand() % 2 == 0) {
-		newSign.position = Vector(rand() % 6 - 15, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 2 + 2*MIN_X, 0, -SPAWN_DISTANCE);
 	}
 	else {
-		newSign.position = Vector(rand() % 6 + 10, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 3 +2*MAX_X , 0, -SPAWN_DISTANCE);
 	}
 
 	newSign.type = rand() % 3;
