@@ -817,11 +817,27 @@ bool isOverlapping(const Vector& newPosition) {
 
 void myMouse(int button, int state, int x, int y)
 {
-	y = yCord - y;
+	/*y = yCord - y;
 
 	if (state == GLUT_DOWN)
 	{
 		cameraZoom = y;
+	}*/
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) { // Left mouse button pressed
+		glLoadIdentity();
+		if (cameraMode == thirdPerson) {
+			cameraMode = firstPerson;
+			Eye = Vector(carPosition.x, camY2, camZ2);
+			Vector At(carPosition.x, 0, 0);
+			Up = Vector(0, 1, 0);
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
+		else {
+			cameraMode = thirdPerson;
+			Vector Eye(camX, camY, camZ);
+			Vector At(0, 0, 0);
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
 	}
 }
 
@@ -834,23 +850,6 @@ void myKeyboard(unsigned char button, int x, int y)
 		break;
 	case 'r':
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-	case 'p':
-		glLoadIdentity();
-		if (cameraMode == thirdPerson) {
-			cameraMode = firstPerson;
-			Eye = Vector(carPosition.x, camY2, camZ2);
-			Vector At(carPosition.x, 0, 0);
-			//At = Vector(carPosition.x, carPosition.y, carPosition.z + 1); //look at meeee
-			Up = Vector(0, 1, 0);
-			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
-		}
-		else {
-			cameraMode = thirdPerson;
-			Vector Eye(camX, camY, camZ);
-			Vector At(0, 0, 0);
-			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
-		}
 		break;
 	case '2' :
 		renderLight = !renderLight;
