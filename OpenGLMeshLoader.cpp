@@ -29,6 +29,8 @@ Model_3DS model_sign_pedestrian;
 Model_3DS model_tank;
 Model_3DS model_building;
 Model_3DS model_obstacle;
+Model_3DS model_bush;
+Model_3DS model_flag;
 #pragma endregion
 
 //textures
@@ -98,17 +100,13 @@ float camZ = 30.0;
 Vector Eye(camX, camY, camZ);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
-Vector Eye2(0, 1, 4);
-Vector At2(0, 0, 0);
 int cameraZoom = 0;
 #pragma endregion
 
 //game data
 #pragma region
 char title[] = "Car in a Mission";
-int scoreScene1 = 0;
-int scoreScene2 = 0;
-const int maxScore = 15;
+int score = 0;
 int lives = 5;
 bool gameOver = false;
 bool winGame = false;
@@ -120,7 +118,21 @@ Vector carPosition(0, 0, 15);
 float MIN_X = -10.0f;
 float MAX_X = 10.0f;
 float moveSpeed = 15.0f;
-float timeRemaining = 40.0f;
+float timeRemaining = 60.0f;
+bool gamePaused = false;
+#pragma endregion
+
+//fps settings
+#pragma region
+float camX2 = carPosition.x;
+float camY2 = carPosition.y + 1.5;
+float camZ2 = carPosition.z - 6.5;
+
+float collectableScaleFactor = 1.0f;
+float timeElapsed = 0.0f;
+double scaleChange = 0.03;
+float flagZPosition = -88;
+float houseZPosition = -88;
 #pragma endregion
 
 //collectables data
@@ -155,7 +167,7 @@ void InitializeGLUT(int argc, char** argv);
 void EnableOpenGLFeatures();
 void RegisterCallbacks();
 void playSound(const char* soundFile, bool loop);
-void Render2DText(int score, bool gameWin, bool gameLose);
+void Render2DText(int score);
 void DrawSkyBox();
 void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, const Vector& rotation);
 void SpawnCollectables();
@@ -174,8 +186,9 @@ void RenderRoad();
 void RenderRoadSegment(float zPosition);
 void CheckAndHandleCollisions();
 bool CheckCollisionWithCollectable(const Vector& carPos, const Collectable& collectable);
-void CheckAndHandleObstacleCollisions();
+void CheckAndHandleCollectableCollisions();
 bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle);
+void CheckAndHandleObstacleCollisions();
 void UpdateObstacles(float deltaTime);
 void SpawnObstacle();
 void RenderHeadlights();
@@ -184,11 +197,12 @@ void timer(int value);
 void DisplaySceneOne();
 void DisplaySceneTwo();
 void LoadScene2();
+void getColorBasedOnTime(float elapsedTime, float& r, float& g, float& b);
 #pragma endregion
 
 //road data
 #pragma region
-std::vector<float> roadSegments; 
+std::vector<float> roadSegments;
 const int NUM_ROAD_SEGMENTS = 10;
 const float ROAD_SEGMENT_LENGTH = 38.0f;
 const float SPAWN_DISTANCE2 = 100.0f;
@@ -216,19 +230,25 @@ void InitializeBuildings() {
 }
 
 void UpdateBuildings(float deltaTime, float carZ) {
-    for (auto& position : buildingPositions) {
-        position.z += moveSpeed * deltaTime;
+	for (auto& position : buildingPositions) {
+		position.z += moveSpeed * deltaTime;
 
-        if (position.z > carZ + REMOVE_DISTANCE) {
-            position.z -= NUM_BUILDINGS * BUILDING_SPACING;
-        }
-    }
+		if (position.z > carZ + REMOVE_DISTANCE) {
+			position.z -= NUM_BUILDINGS * BUILDING_SPACING;
+		}
+	}
 }
 
 void RenderBuildings() {
 	for (const auto& position : buildingPositions) {
 		DrawModel(model_building, position, Vector(0.01f, 0.03f, 0.01f), Vector(0, 0, 0));
 	}
+}
+
+void getColorBasedOnTime(float elapsedTime, float& r, float& g, float& b) {
+	r = 0.5f + 0.5f * sin(elapsedTime * 0.5f);
+	g = 0.5f + 0.5f * sin(elapsedTime * 0.5f + 3.14f / 2.0f);
+	b = 0.5f + 0.5f * sin(elapsedTime * 0.5f + 3.14f);
 }
 
 void DisplaySceneOne()
@@ -240,39 +260,55 @@ void DisplaySceneOne()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
+	float r, g, b;
+	getColorBasedOnTime(timeElapsed, r, g, b);
+
 	glPushMatrix();
 	glTranslatef(0, 0, +moveSpeed);
 
 	// ground
 	RenderRoad();
+
 	RenderBuildings();
-	// tank model
+
+	// tanks (scaling)
 	for (const auto& collectable : collectables) {
-		DrawModel(model_tank, collectable.position, Vector(0.03f, 0.03f, 0.03f), Vector(0, 90, 0));
+		DrawModel(model_tank, collectable.position, Vector(0.03f * collectableScaleFactor, 0.03f * collectableScaleFactor, 0.03f * collectableScaleFactor), Vector(0, 90, 0));
 	}
 
-
+	// barriers (changing colors)
 	for (const auto& obstacle : obstacles) {
+		glPushMatrix();
+		glColor3f(r, g, b);
 		DrawModel(model_obstacle, obstacle.position, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+		glPopMatrix();
 	}
 
+	// reset colors to 0
+	glColor3f(1.0f, 1.0f, 1.0f);
 
 	DrawSigns();
 
 	//sky box
 	DrawSkyBox();
 
+	// flag at the end of the road
+
+
+	if (timeRemaining <= 36) {
+		flagZPosition += moveSpeed * 0.08;
+		Vector flagPosition = Vector(0, -10, flagZPosition);
+		DrawModel(model_flag, flagPosition, Vector(1, 1, 1), Vector(0, 0, 0));
+	}
+
 	glPopMatrix();
-	//DrawModel(model_building, Vector(-20, 0, -5), Vector(0.01, 0.03, 0.01), Vector(0, 0, 0));
-	//DrawModel(model_building, Vector(20, 0, -5), Vector(0.01, 0.04, 0.01), Vector(0, 0, 0));
 
 	// car model
 	RenderHeadlights();
-	// Draw the car model
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 	//DrawModelWithBoundingBox();
 
-	Render2DText(scoreScene1, false, false);
+	Render2DText(score);
 
 	glutSwapBuffers();
 }
@@ -285,23 +321,51 @@ void DisplaySceneTwo(void) {
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
-	RenderGround();
+	float r, g, b;
+	getColorBasedOnTime(timeElapsed, r, g, b);
 
-	// car
-	DrawModel(model_car, Vector(0, 0, 15), Vector(1.4f, 1.5f, 1.5f), Vector(0, 180, 0));
+	glPushMatrix();
+	glTranslatef(0, 0, +moveSpeed);
 
-	// tree model
-	DrawModel(model_tree, Vector(10, 0, 0), Vector(0.7, 0.7, 0.7), Vector(0, 0, 0));
+	RenderRoad();
 
-	// house model
-	DrawModel(model_house, Vector(0, 0, 0), Vector(1, 1, 1), Vector(90, 0, 0));
+	// pizzas (scaling)
+	for (const auto& collectable : collectables) {
+		DrawModel(model_pizza, collectable.position, Vector(0.01f * collectableScaleFactor, 0.01f * collectableScaleFactor, 0.01f * collectableScaleFactor), Vector(0, 90, 0));
+	}
 
-	// pizza
-	DrawModel(model_pizza, Vector(10, 10, 10), Vector(0.008, 0.008, 0.008), Vector(0, 0, -90));
+	// bushes (changing colors)
+	for (const auto& obstacle : obstacles) {
+		glPushMatrix();
+		glColor3f(r, g, b);
+		DrawModel(model_bush, obstacle.position, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+		glPopMatrix();
+	}
+
+	// resetting colors
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+
+	// trees
+	for (const auto& sign : signPositions) {
+		DrawModel(model_tree, sign.position, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+	}
 
 	DrawSkyBox();
 
-	Render2DText(scoreScene2, false, false);
+	if (timeRemaining <= 4) {
+		houseZPosition += moveSpeed * 0.08;
+		Vector housePosition = Vector(0, 0, houseZPosition);
+		DrawModel(model_house, housePosition, Vector(1, 1, 1), Vector(90, 0, 0));
+	}
+
+	glPopMatrix();
+
+	// car
+	RenderHeadlights();
+	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
+
+	Render2DText(score);
 
 	glutSwapBuffers();
 }
@@ -311,26 +375,52 @@ void LoadScene2() {
 }
 
 void timer(int value) {
-	timeRemaining -= 0.1f;
+	if (gameOver) return;
 
-	if (timeRemaining == 20) {
-		currentScene = scene2;
-		LoadScene2();
+	if (currentScene == scene1) {
+		glutDisplayFunc(DisplaySceneOne);
 	}
-	if (timeRemaining <= 0) {
-		gameOver = true;
+	else {
+		glutDisplayFunc(DisplaySceneTwo);
 	}
 
-	CheckAndHandleCollisions();
-	UpdateBuildings(0.1, carPosition.z);
-	UpdateRoad(0.1f, carPosition.z);
-	UpdateSigns(0.1f);
-	UpdateCollectables(0.1f);
-	UpdateObstacles(0.1f);
+	if (!gamePaused) {
+		CheckAndHandleCollisions();
+		UpdateBuildings(0.1, carPosition.z);
+		UpdateRoad(0.1f, carPosition.z);
+		UpdateSigns(0.1f);
+		UpdateCollectables(0.1f);
+		UpdateObstacles(0.1f);
+	}
+
+	collectableScaleFactor += scaleChange;
+	if (collectableScaleFactor > 1 || collectableScaleFactor < 0.75)
+		scaleChange = -scaleChange;
+
+	timeElapsed = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 
 	glutPostRedisplay();
 
 	glutTimerFunc(100, timer, 0);
+}
+
+void decrementTime(int value) {
+	timeRemaining--;
+
+	if (timeRemaining == 30) {
+		currentScene = scene2;
+		LoadScene2();
+	}
+
+	if (timeRemaining <= 0) {
+		winGame = true;
+		moveSpeed = 0;
+		carSound = engine->play2D("sounds/cheering(win).wav", true, false, true);
+		return;
+	}
+
+	glutPostRedisplay();
+	glutTimerFunc(1000, decrementTime, 0);
 }
 
 void main(int argc, char** argv)
@@ -338,6 +428,7 @@ void main(int argc, char** argv)
 	InitializeGLUT(argc, argv);
 	RegisterCallbacks();
 	glutTimerFunc(100, timer, 0);
+	glutTimerFunc(1000, decrementTime, 0);
 	myInit();
 	InitializeBuildings();
 	InitializeRoad();
@@ -345,7 +436,7 @@ void main(int argc, char** argv)
 	EnableOpenGLFeatures();
 	if (!backgroundSound)
 		backgroundSound = engine->play2D("sounds/bg_sound.wav", true, false, true);
-	if(!carSound)
+	if (!carSound)
 		carSound = engine->play2D("sounds/car moving.wav", true, false, true);
 	glutMainLoop();
 	engine->drop();
@@ -379,6 +470,7 @@ void UpdateRoad(float deltaTime, float playerPositionZ) {
 	}
 }
 
+
 void RenderRoad() {
 	for (const auto& segmentZ : roadSegments) {
 		RenderRoadSegment(segmentZ);
@@ -395,21 +487,14 @@ bool CheckCollisionWithObstacle(const Vector& carPos, const Obstacle& obstacle) 
 	return distance < 2.5;
 }
 
-void CheckAndHandleObstacleCollisions() {
-	for (auto& obstacle : obstacles) {
-		if (obstacle.effective && CheckCollisionWithObstacle(carPosition, obstacle)) {
-			lives -= 1;
-			playSound("sounds/crash(car-obs).wav", false);
-			obstacle.effective = false;
-		}
-	}
-}
-
-void CheckAndHandleCollisions() {
+void CheckAndHandleCollectableCollisions() {
 	for (auto it = collectables.begin(); it != collectables.end();) {
 		if (CheckCollisionWithCollectable(carPosition, *it)) {
-			scoreScene1 += 10;
-			playSound("sounds/liquid(car-tank).wav", false);
+			score += 10;
+			if (currentScene == scene1)
+				playSound("sounds/liquid(car-tank).wav", false);
+			else
+				playSound("sounds/chewing(car-food).wav", false);
 			it->isVisible = false;
 
 			it = collectables.erase(it);
@@ -418,7 +503,28 @@ void CheckAndHandleCollisions() {
 			++it;
 		}
 	}
+}
 
+void CheckAndHandleObstacleCollisions() {
+	for (auto& obstacle : obstacles) {
+		if (obstacle.effective && CheckCollisionWithObstacle(carPosition, obstacle)) {
+			lives -= 1;
+			if (lives <= 0) {
+				gameOver = true;
+				moveSpeed = 0;
+			}
+			playSound("sounds/crash(car-obs).wav", false);
+			obstacle.effective = false;
+			moveSpeed = 0.0f;
+			gamePaused = true;
+			printf("i collided and i am testing how stupid i am\n");
+			return;
+		}
+	}
+}
+
+void CheckAndHandleCollisions() {
+	CheckAndHandleCollectableCollisions();
 	CheckAndHandleObstacleCollisions();
 }
 
@@ -426,10 +532,10 @@ void SpawnSign() {
 	Sign newSign;
 
 	if (rand() % 2 == 0) {
-		newSign.position = Vector(rand() % 3 + 1.5* MIN_X, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 3 + 1.5 * -12, 0, -SPAWN_DISTANCE);
 	}
 	else {
-		newSign.position = Vector(rand() % 3 +  MAX_X, 0, -SPAWN_DISTANCE);
+		newSign.position = Vector(rand() % 3 + 12, 0, -SPAWN_DISTANCE);
 	}
 
 	newSign.type = rand() % 3;
@@ -477,7 +583,11 @@ void SpawnCollectables() {
 
 	newCollectable.position = Vector((rand() % 21) - 10, 0, -SPAWN_DISTANCE);
 
-	newCollectable.model = model_tank;
+	if (currentScene == scene1)
+		newCollectable.model = model_tank;
+	else
+		newCollectable.model = model_pizza;
+
 	collectables.push_back(newCollectable);
 }
 
@@ -490,7 +600,11 @@ void SpawnObstacle() {
 		newObstacle.position = Vector(rand() % 21 - 10, 0, -SPAWN_DISTANCE);
 	}
 
-	newObstacle.model = model_obstacle;
+	if (currentScene == scene1)
+		newObstacle.model = model_obstacle;
+	else
+		newObstacle.model = model_tree;
+
 	obstacles.push_back(newObstacle);
 }
 
@@ -501,6 +615,7 @@ void UpdateCollectables(float deltaTime) {
 		SpawnCollectables();
 		spawnTimer = 0.0f;
 	}
+
 	for (auto it = collectables.begin(); it != collectables.end();) {
 		it->position.z += moveSpeed * deltaTime;
 
@@ -535,7 +650,6 @@ void UpdateObstacles(float deltaTime) {
 	}
 }
 
-//define the dimensions of objects lmao
 void DrawModelWithBoundingBox() {
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 
@@ -545,7 +659,7 @@ void DrawModelWithBoundingBox() {
 
 	float carLeft = carPosition.x - carWidth / 2;
 	float carRight = carPosition.x + carWidth / 2;
-	float carBottom = carPosition.y; // Assuming ground level
+	float carBottom = carPosition.y;
 	float carTop = carPosition.y + carHeight;
 	float carFront = carPosition.z + carLength / 2;
 	float carBack = carPosition.z - carLength / 2;
@@ -672,6 +786,107 @@ void DrawModel(Model_3DS& model, const Vector& position, const Vector& scale, co
 	glPopMatrix();
 }
 
+bool isOverlapping(const Vector& newPosition) {
+	const float minDistance = 5.0f;
+
+	for (const auto& collectable : collectables) {
+		float dist = sqrtf(
+			pow(collectable.position.x - newPosition.x, 2) +
+			pow(collectable.position.y - newPosition.y, 2) +
+			pow(collectable.position.z - newPosition.z, 2)
+		);
+
+		if (dist < minDistance) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void myMouse(int button, int state, int x, int y)
+{
+	y = yCord - y;
+
+	if (state == GLUT_DOWN)
+	{
+		cameraZoom = y;
+	}
+}
+
+void myKeyboard(unsigned char button, int x, int y)
+{
+	switch (button)
+	{
+	case 'w':
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+	case 'r':
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		break;
+	case 'p':
+		glLoadIdentity();
+		if (cameraMode == thirdPerson) {
+			cameraMode = firstPerson;
+			Eye = Vector(carPosition.x, camY2, camZ2);
+			Vector At(carPosition.x, 0, 0);
+			//At = Vector(carPosition.x, carPosition.y, carPosition.z + 1); look at meeee
+			Up = Vector(0, 1, 0);
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
+		else {
+			cameraMode = thirdPerson;
+			Vector Eye(camX, camY, camZ);
+			Vector At(0, 0, 0);
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
+void mySpecialKeyboard(int key, int x, int y)
+{
+	float moveAmount = 1.0f;
+
+	if (gamePaused) {
+		if (key == GLUT_KEY_LEFT || key == GLUT_KEY_RIGHT) {
+			moveSpeed = 8.0f; //3shan law rege3 b-full speed msh hnl72 nmshy men ganbaha w hykhosh gowa el barrier
+			gamePaused = false;
+		}
+	}
+	else {
+		moveSpeed = 15.0f;
+		switch (key) {
+		case GLUT_KEY_LEFT:
+			if (carPosition.x - moveAmount >= MIN_X) {
+				carPosition.x -= moveAmount;
+			}if (cameraMode == firstPerson) {
+				Eye.x = carPosition.x;
+				At.x = carPosition.x;
+				glLoadIdentity();
+				gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+			}
+			break;
+		case GLUT_KEY_RIGHT:
+			if (carPosition.x + moveAmount <= MAX_X) {
+				carPosition.x += moveAmount;
+			}
+			if (cameraMode == firstPerson) {
+				Eye.x = carPosition.x;
+				At.x = carPosition.x;
+				glLoadIdentity();
+				gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+			}
+			break;
+		}
+	}
+	glutPostRedisplay();
+}
+
 void myMotion(int x, int y)
 {
 	y = yCord - y;
@@ -697,81 +912,6 @@ void myMotion(int x, int y)
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
 	glutPostRedisplay();	//Re-draw scene 
-}
-
-void myMouse(int button, int state, int x, int y)
-{
-	y = yCord - y;
-
-	if (state == GLUT_DOWN)
-	{
-		cameraZoom = y;
-	}
-}
-
-bool isOverlapping(const Vector& newPosition) {
-	const float minDistance = 5.0f;
-
-	for (const auto& collectable : collectables) {
-		float dist = sqrtf(
-			pow(collectable.position.x - newPosition.x, 2) +
-			pow(collectable.position.y - newPosition.y, 2) +
-			pow(collectable.position.z - newPosition.z, 2)
-		);
-
-		if (dist < minDistance) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void myKeyboard(unsigned char button, int x, int y)
-{
-	switch (button)
-	{
-	case 'w':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		break;
-	case 'r':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-	case 'p':
-		if (cameraMode == thirdPerson) {
-			cameraMode = firstPerson;
-			gluLookAt(Eye2.x, Eye2.y, Eye2.z, At2.x, At2.y, At2.z, Up.x, Up.y, Up.z);
-		}
-		else {
-			cameraMode = thirdPerson;
-			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
-		}
-		break;
-
-	default:
-		break;
-	}
-
-	glutPostRedisplay();
-}
-
-void mySpecialKeyboard(int key, int x, int y)
-{
-	float moveAmount = 1.0f;
-
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		if (carPosition.x - moveAmount >= MIN_X) {
-			carPosition.x -= moveAmount;
-		}
-		break;
-	case GLUT_KEY_RIGHT:
-		if (carPosition.x + moveAmount <= MAX_X) {
-			carPosition.x += moveAmount;
-		}
-		break;
-
-	}
-	glutPostRedisplay();
 }
 
 void InitLightSource()
@@ -811,7 +951,6 @@ void RenderGround()
 	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
 
 	glPushMatrix();
-	//glTranslatef(0, 0, +moveSpeed);
 	glBegin(GL_QUADS);
 	glNormal3f(0, 1, 0);
 	glTexCoord2f(0, 0);
@@ -919,8 +1058,8 @@ void LoadAssets()
 	model_tank.Load("Models/tank/gasContain.3ds");
 	model_obstacle.Load("Models/barrier/Road Barrier 01/Road Barrier 01a.3ds");
 	model_building.Load("Models/building/BUILDINGS.3ds");
-	//model_building2.Load("Models/building2/Building.3DS");
-
+	model_bush.Load("Models/bush/Bush1.3ds");
+	model_flag.Load("Models/finish/uploads_files_2024783_Flag_v1_001.3ds");
 	// Loading texture files
 	tex_ground.Load("Textures/road1.bmp");
 
@@ -938,12 +1077,7 @@ void InitializeGLUT(int argc, char** argv)
 
 void RegisterCallbacks()
 {
-	if (currentScene == scene1) {
-		glutDisplayFunc(DisplaySceneOne);
-	}
-	else {
-		glutDisplayFunc(DisplaySceneTwo);
-	}
+	glutDisplayFunc(DisplaySceneOne);
 	glutKeyboardFunc(myKeyboard);
 	glutSpecialFunc(mySpecialKeyboard);
 	glutMotionFunc(myMotion);
@@ -967,7 +1101,7 @@ void playSound(const char* soundFile, bool loop) {
 	}
 }
 
-void Render2DText(int score, bool gameWin, bool gameLose) {
+void Render2DText(int score) {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
@@ -976,23 +1110,20 @@ void Render2DText(int score, bool gameWin, bool gameLose) {
 	glPushMatrix();
 	glLoadIdentity();
 
-	if (gameLose) {
+	if (gameOver) {
 		glColor3f(1.0f, 0.0f, 0.0f);
-		glRasterPos2f(xCord / 2.0 - 200, yCord / 2.0);
-		char message[50];
-		if (scoreScene1 < maxScore)
-			sprintf(message, "Game Lose, You ran out of gas, with a score of %d out of %d", scoreScene1 + scoreScene2, 2 * maxScore);
-		else if (scoreScene2 < maxScore)
-			sprintf(message, "Game Lose, Your player is hungry :( , final score %d out of %d", scoreScene1 + scoreScene2, 2 * maxScore);
+		glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
+		char message[70];
+		sprintf(message, "Game Over :( You ran out of lives, with a score of %d", score);
 		for (char* c = message; *c != '\0'; c++) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 		}
 	}
-	else if (gameWin) {
+	else if (winGame) {
 		glColor3f(0.1137f, 0.6118f, 0.0980f);
-		glRasterPos2f(xCord / 2.0 - 200, yCord / 2.0);
+		glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
 		char message[50];
-		sprintf(message, "Game Win, with a final score % d out of % d", scoreScene1 + scoreScene2, 2 * maxScore);
+		sprintf(message, "Game Win!! with a final score % d", score);
 		for (char* c = message; *c != '\0'; c++) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 		}
