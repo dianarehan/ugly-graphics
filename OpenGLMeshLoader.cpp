@@ -121,6 +121,7 @@ float moveSpeed = 15.0f;
 int timeRemaining = 60.0f;
 bool gamePaused = false;
 int tankCount = 0;
+bool renderLight = true;
 #pragma endregion
 
 //fps settings
@@ -306,7 +307,8 @@ void DisplaySceneOne()
 	glPopMatrix();
 
 	// car model
-	RenderHeadlights();
+	if(renderLight)
+		RenderHeadlights();
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 	//DrawModelWithBoundingBox();
 
@@ -839,7 +841,7 @@ void myKeyboard(unsigned char button, int x, int y)
 			cameraMode = firstPerson;
 			Eye = Vector(carPosition.x, camY2, camZ2);
 			Vector At(carPosition.x, 0, 0);
-			//At = Vector(carPosition.x, carPosition.y, carPosition.z + 1); look at meeee
+			//At = Vector(carPosition.x, carPosition.y, carPosition.z + 1); //look at meeee
 			Up = Vector(0, 1, 0);
 			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
@@ -850,7 +852,9 @@ void myKeyboard(unsigned char button, int x, int y)
 			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
 		break;
-
+	case '2' :
+		renderLight = !renderLight;
+		break;
 	default:
 		break;
 	}
