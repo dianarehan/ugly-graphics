@@ -118,8 +118,9 @@ Vector carPosition(0, 0, 15);
 float MIN_X = -10.0f;
 float MAX_X = 10.0f;
 float moveSpeed = 15.0f;
-float timeRemaining = 60.0f;
+int timeRemaining = 60.0f;
 bool gamePaused = false;
+int tankCount = 0;
 #pragma endregion
 
 //fps settings
@@ -253,6 +254,7 @@ void getColorBasedOnTime(float elapsedTime, float& r, float& g, float& b) {
 
 void DisplaySceneOne()
 {
+	if (gameOver) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
@@ -314,6 +316,7 @@ void DisplaySceneOne()
 }
 
 void DisplaySceneTwo(void) {
+	if (gameOver||winGame) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
@@ -409,7 +412,15 @@ void decrementTime(int value) {
 
 	if (timeRemaining == 30) {
 		currentScene = scene2;
+		tankCount = score / 10;
 		LoadScene2();
+	}
+
+	if (currentScene == scene2 && timeRemaining % 7 == 0) {
+		tankCount--;
+		if (tankCount == 0) {
+			gameOver = true;
+		}
 	}
 
 	if (timeRemaining <= 0) {
@@ -469,7 +480,6 @@ void UpdateRoad(float deltaTime, float playerPositionZ) {
 		}
 	}
 }
-
 
 void RenderRoad() {
 	for (const auto& segmentZ : roadSegments) {
