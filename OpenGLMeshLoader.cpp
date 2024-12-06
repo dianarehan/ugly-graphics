@@ -1214,7 +1214,7 @@ void LoadAssets()
 	model_obstacle.Load("Models/barrier/Road Barrier 01/Road Barrier 01a.3ds");
 	model_building.Load("Models/building/BUILDINGS.3ds");
 	model_bush.Load("Models/bush/Bush1.3ds");
-	model_flag.Load("Models/finish/uploads_files_2024783_Flag_v1_001.3ds");
+	model_flag.Load("Models/portal/StonePortal1_3ds/StonePortal1.3ds");
 	// Loading texture files
 	tex_ground.Load("Textures/road1.bmp");
 
