@@ -899,12 +899,6 @@ bool isOverlapping(const Vector& newPosition) {
 
 void myMouse(int button, int state, int x, int y)
 {
-	/*y = yCord - y;
-
-	if (state == GLUT_DOWN)
-	{
-		cameraZoom = y;
-	}*/
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) { // Left mouse button pressed
 		glLoadIdentity();
 		if (cameraMode == thirdPerson) {
@@ -994,7 +988,17 @@ void SetCamera() {
 
 	switch (currentView) {
 	case FREE_VIEW:
-		gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		if (cameraMode == thirdPerson) {
+			Eye = Vector(carPosition.x, camY2, camZ2);
+			Vector At(carPosition.x, 0, 0);
+			Up = Vector(0, 1, 0);
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
+		else {
+			Vector Eye(camX, camY, camZ);
+			Vector At(0, 0, 0);
+			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		}
 		break;
 	case TOP_VIEW:
 		gluLookAt(carPosition.x, carPosition.y + 50.0, carPosition.z, carPosition.x, carPosition.y, carPosition.z, 0.0, 0.0, -1.0);
