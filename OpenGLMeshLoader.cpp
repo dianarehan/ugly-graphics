@@ -814,16 +814,16 @@ void RenderHeadlights() {
 
 	//left headlight light source
 	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 20.0f, 1.0f };  // Homogeneous coordinates
-	glLightfv(GL_LIGHT0, GL_POSITION, leftLightPosition);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
+	glLightfv(GL_LIGHT2, GL_POSITION, leftLightPosition);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT2, GL_AMBIENT, lightAmbient);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, lightSpecular);
 	const GLfloat CONSTANT_ATTENUATION = 0.8f;
-	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, CONSTANT_ATTENUATION);
-	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05f);
-	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.02f);
+	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, CONSTANT_ATTENUATION);
+	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.05f);
+	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.02f);
 
-	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT2);
 
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 0.8f);
@@ -849,8 +849,8 @@ void RenderHeadlights() {
 
 	glEnable(GL_LIGHT1);
 
-	glLightfv(GL_LIGHT0, GL_POSITION, leftLightPosition);
-	glEnable(GL_LIGHT0);
+	glLightfv(GL_LIGHT2, GL_POSITION, leftLightPosition);
+	glEnable(GL_LIGHT2);
 
 	// Right headlight
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
