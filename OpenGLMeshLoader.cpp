@@ -14,6 +14,7 @@
 #include <vector>
 #include <cstdlib> 
 #include <ctime>  
+#define DEG2RAD(a) (a * 0.0174532925)
 
 using namespace irrklang;
 
@@ -106,6 +107,96 @@ enum View { FREE_VIEW, TOP_VIEW, SIDE_VIEW, FRONT_VIEW };
 View currentView = FREE_VIEW;
 #pragma endregion
 
+// lab 6
+class Vector3f {
+public:
+	float x, y, z;
+
+	Vector3f(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) {
+		x = _x;
+		y = _y;
+		z = _z;
+	}
+
+	Vector3f operator+(Vector3f& v) {
+		return Vector3f(x + v.x, y + v.y, z + v.z);
+	}
+
+	Vector3f operator-(Vector3f& v) {
+		return Vector3f(x - v.x, y - v.y, z - v.z);
+	}
+
+	Vector3f operator*(float n) {
+		return Vector3f(x * n, y * n, z * n);
+	}
+
+	Vector3f operator/(float n) {
+		return Vector3f(x / n, y / n, z / n);
+	}
+
+	Vector3f unit() {
+		return *this / sqrt(x * x + y * y + z * z);
+	}
+
+	Vector3f cross(Vector3f v) {
+		return Vector3f(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
+	}
+};
+class Camera {
+public:
+	Vector3f eye, center, up;
+
+	Camera(float eyeX = 1.0f, float eyeY = 1.0f, float eyeZ = 1.0f,
+		float centerX = 0.0f, float centerY = 0.0f, float centerZ = 0.0f,
+		float upX = 0.0f, float upY = 1.0f, float upZ = 0.0f) {
+		eye = Vector3f(eyeX, eyeY, eyeZ);
+		center = Vector3f(centerX, centerY, centerZ);
+		up = Vector3f(upX, upY, upZ);
+	}
+
+	void moveX(float d) {
+		Vector3f right = up.cross(center - eye).unit();
+		eye = eye + right * d;
+		center = center + right * d;
+	}
+
+	void moveY(float d) {
+		eye = eye + up.unit() * d;
+		center = center + up.unit() * d;
+	}
+
+	void moveZ(float d) {
+		Vector3f view = (center - eye).unit();
+		eye = eye + view * d;
+		center = center + view * d;
+	}
+
+	void rotateX(float a) {
+		Vector3f view = (center - eye).unit();
+		Vector3f right = up.cross(view).unit();
+		view = view * cos(DEG2RAD(a)) + up * sin(DEG2RAD(a));
+		up = view.cross(right);
+		center = eye + view;
+	}
+
+	void rotateY(float a) {
+		Vector3f view = (center - eye).unit();
+		Vector3f right = up.cross(view).unit();
+		view = view * cos(DEG2RAD(a)) + right * sin(DEG2RAD(a));
+		right = view.cross(up);
+		center = eye + view;
+	}
+
+	void look() {
+		gluLookAt(
+			eye.x, eye.y, eye.z,
+			center.x, center.y, center.z,
+			up.x, up.y, up.z
+		);
+	}
+};
+Camera camera(0.0f, 2.0f, 8.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
 //game data
 #pragma region
 char title[] = "Car in a Mission";
@@ -124,7 +215,6 @@ float moveSpeed = 15.0f;
 int timeRemaining = 120.0f;
 bool gamePaused = false;
 int tankCount = 1;
-bool renderLight = true;
 #pragma endregion
 
 //fps settings
@@ -302,6 +392,7 @@ void DisplaySceneOne()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 	SetCamera();
+
 	if (gameOver)
 	{
 		Render2DText(score);
@@ -348,11 +439,8 @@ void DisplaySceneOne()
 	//sky box
 	DrawSkyBox();
 
-	// flag at the end of the road
-
-
-	if (timeRemaining <= 66) {
-		flagZPosition += moveSpeed * 0.08;
+	if (timeRemaining <= 61) {
+		flagZPosition += moveSpeed;
 		Vector flagPosition = Vector(0, 8, flagZPosition);
 		DrawModel(model_flag, flagPosition, Vector(0.3, 0.3, 0.3), Vector(0, 0, 0));
 	}
@@ -360,8 +448,7 @@ void DisplaySceneOne()
 	glPopMatrix();
 
 	// car model
-	if (renderLight)
-		RenderHeadlights();
+	RenderHeadlights();
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 	//DrawModelWithBoundingBox();
 
@@ -378,8 +465,8 @@ void DisplaySceneTwo(void) {
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
-
 	SetCamera();
+
 	if (winGame)
 	{
 		Render2DText(score);
@@ -448,8 +535,7 @@ void DisplaySceneTwo(void) {
 	glPopMatrix();
 
 	// car
-	if (renderLight)
-		RenderHeadlights();
+	RenderHeadlights();
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 
 	Render2DText(score);
@@ -492,7 +578,9 @@ void timer(int value) {
 }
 
 void decrementTime(int value) {
-	if (timeRemaining >= 0 && !gameOver && !winGame) {
+	if (gamePaused || gameOver || winGame) return;
+
+	if (timeRemaining >= 0 && !gamePaused) {
 		timeRemaining--;
 
 		if (timeRemaining == 60) {
@@ -501,7 +589,7 @@ void decrementTime(int value) {
 			LoadScene2();
 		}
 
-		if (currentScene == scene2 && timeRemaining % 4 == 0) {
+		if (currentScene == scene2 && timeRemaining % 5 == 0) {
 			if (tankCount <= 0) {
 				gameOver = true;
 			}
@@ -612,7 +700,6 @@ void CheckAndHandleObstacleCollisions() {
 			obstacle.effective = false;
 			moveSpeed = 0.0f;
 			gamePaused = true;
-			printf("i collided and i am testing how stupid i am\n");
 			return;
 		}
 	}
@@ -806,7 +893,6 @@ void DrawModelWithBoundingBox() {
 }
 
 void RenderHeadlights() {
-	// Enable lighting
 	glEnable(GL_LIGHTING);
 
 	GLfloat lightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -815,8 +901,7 @@ void RenderHeadlights() {
 
 	glPushMatrix();
 
-	//left headlight light source
-	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 4.5f, 1.0f };  // Homogeneous coordinates
+	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 4.5f, 1.0f };
 	glLightfv(GL_LIGHT2, GL_POSITION, leftLightPosition);
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT2, GL_AMBIENT, lightAmbient);
@@ -831,16 +916,13 @@ void RenderHeadlights() {
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 0.8f);
 	glTranslatef(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 12.0f);
-	glutSolidSphere(0.1, 10, 10);
 	glEnable(GL_LIGHTING);
 
 	glPopMatrix();
 
-	//Right headlight
 	glPushMatrix();
 
-	// Set the position and properties for the right headlight light source
-	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 4.5f, 1.0f };  // Homogeneous coordinates
+	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 4.5f, 1.0f };
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
@@ -855,11 +937,9 @@ void RenderHeadlights() {
 	glLightfv(GL_LIGHT2, GL_POSITION, leftLightPosition);
 	glEnable(GL_LIGHT2);
 
-	// Right headlight
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
 	glEnable(GL_LIGHT1);
 
-	// Render visual spheres for headlights
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 0.8f);
 	glTranslatef(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
@@ -909,48 +989,42 @@ void myMouse(int button, int state, int x, int y)
 	}
 }
 
-
 void myKeyboard(unsigned char button, int x, int y)
 {
+	float a = 1.0;
+	float d = 0.01;
 	const float turnSpeed = 0.05f;
 	switch (button)
 	{
-	case '2':
-		renderLight = !renderLight;
+	case 'w':
+		camera.moveY(d);
 		break;
-	case 'w': //z positive
-		camX += moveSpeed * sin(camYaw);
-		camZ -= moveSpeed * cos(camYaw);
+	case 's':
+		camera.moveY(-d);
 		break;
-	case 's': //z negative
-		camX -= moveSpeed * sin(camYaw);
-		camZ += moveSpeed * cos(camYaw);
+	case 'a':
+		camera.moveX(d);
 		break;
-	case 'a': //x negative
-		camX -= moveSpeed * cos(camYaw);
-		camZ -= moveSpeed * sin(camYaw);
+	case 'd':
+		camera.moveX(-d);
 		break;
-	case 'd': //x positive
-		camX += moveSpeed * cos(camYaw);
-		camZ += moveSpeed * sin(camYaw);
+	case 'q':
+		camera.moveZ(d);
 		break;
-	case 'q': //y positive
-		camY += moveSpeed;
+	case 'e':
+		camera.moveZ(-d);
 		break;
-	case 'e': //y negative
-		camY -= moveSpeed;
+	case 'i':
+		camera.rotateX(a);
 		break;
-	case 'j': //rotate on positive y
-		camYaw -= turnSpeed;
+	case 'j':
+		camera.rotateX(-a);
 		break;
-	case 'l': //rotate on negative y
-		camYaw += turnSpeed;
+	case 'k':
+		camera.rotateY(a);
 		break;
-	case 'i': //rotate on positive x
-		camPitch += turnSpeed;
-		break;
-	case 'k': //rotate on negative x
-		camPitch -= turnSpeed;
+	case 'l':
+		camera.rotateY(-a);
 		break;
 	case 'u': //free view
 		currentView = FREE_VIEW;
@@ -971,6 +1045,41 @@ void myKeyboard(unsigned char button, int x, int y)
 	glutPostRedisplay();
 }
 
+void mySpecialKeyboard(int key, int x, int y)
+{
+	float moveAmount = 1.0f;
+
+	if (gamePaused) {
+		if (key == GLUT_KEY_LEFT || key == GLUT_KEY_RIGHT) {
+			moveSpeed = 8.0f;
+			gamePaused = false;
+			glutTimerFunc(1000, decrementTime, 0);
+		}
+	}
+	else {
+		moveSpeed = 15.0f;
+		switch (key) {
+		case GLUT_KEY_LEFT:
+			if (carPosition.x - moveAmount >= MIN_X) {
+				carPosition.x -= moveAmount;
+				if (cameraMode == firstPerson) {
+					camera.moveX(moveAmount);
+				}
+			}
+			break;
+		case GLUT_KEY_RIGHT:
+			if (carPosition.x + moveAmount <= MAX_X) {
+				carPosition.x += moveAmount;
+				if (cameraMode == firstPerson) {
+					camera.moveX(-moveAmount);
+				}
+			}
+			break;
+		}
+	}
+	glutPostRedisplay();
+}
+
 void SetCamera() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -982,14 +1091,12 @@ void SetCamera() {
 	switch (currentView) {
 	case FREE_VIEW:
 		if (cameraMode == firstPerson) {
-			Eye = Vector(carPosition.x, camY2, camZ2);
-			Vector At(carPosition.x, 0, 0);
-			Up = Vector(0, 1, 0);
-			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+			camera.look();
 		}
 		else {
 			Vector Eye(carPosition.x, camY, camZ);
 			Vector At(carPosition.x, 0, 0);
+			Vector Up(0, 1, 0);
 			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
 		break;
@@ -1003,34 +1110,6 @@ void SetCamera() {
 		gluLookAt(carPosition.x, carPosition.y + 1.0f, carPosition.z + 50.0, carPosition.x, carPosition.y, carPosition.z, 0.0, 1.0, 0.0);
 		break;
 	}
-}
-
-void mySpecialKeyboard(int key, int x, int y)
-{
-	float moveAmount = 1.0f;
-
-	if (gamePaused) {
-		if (key == GLUT_KEY_LEFT || key == GLUT_KEY_RIGHT) {
-			moveSpeed = 8.0f; //3shan law rege3 b-full speed msh hnl72 nmshy men ganbaha w hykhosh gowa el barrier
-			gamePaused = false;
-		}
-	}
-	else {
-		moveSpeed = 15.0f;
-		switch (key) {
-		case GLUT_KEY_LEFT:
-			if (carPosition.x - moveAmount >= MIN_X) {
-				carPosition.x -= moveAmount;
-			}
-			break;
-		case GLUT_KEY_RIGHT:
-			if (carPosition.x + moveAmount <= MAX_X) {
-				carPosition.x += moveAmount;
-			}
-			break;
-		}
-	}
-	glutPostRedisplay();
 }
 
 void myMotion(int x, int y)
@@ -1052,12 +1131,12 @@ void myMotion(int x, int y)
 
 	glLoadIdentity();
 
-	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
+	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 
 	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-	glutPostRedisplay();	//Re-draw scene 
+	glutPostRedisplay();
 }
 
 void InitLightSource()
@@ -1291,7 +1370,7 @@ void Render2DText(int score) {
 		if (currentScene == scene1) {
 			glColor3f(1.0f, 0.0f, 0.0f);
 			glRasterPos2f(250.0f, 580.0f);
-			std::string text = "Collect 30 gas tanks or more to support you in the countryside.";
+			std::string text = "Collect 24 gas tanks or more to support you in the countryside.";
 			for (char c : text) {
 				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
 			}
