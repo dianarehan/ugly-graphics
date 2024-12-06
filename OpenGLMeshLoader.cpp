@@ -253,11 +253,47 @@ void getColorBasedOnTime(float elapsedTime, float& r, float& g, float& b) {
 	b = 0.5f + 0.5f * sin(elapsedTime * 0.5f + 3.14f);
 }
 
+float Lerp(float start, float end, float t) {
+	return start + t * (end - start);
+}
+
+void UpdateLightColor(float timeElapsed, GLfloat* lightColor) {
+	float timeOfDay = fmod(timeElapsed, 30) / 30;
+
+	GLfloat dayColor[3] = { 1.0f, 1.0f, 1.0f };
+	GLfloat sunsetColor[3] = { 1.0f, 0.5f, 0.3f };
+	GLfloat nightColor[3] = { 0.05f, 0.05f, 0.1f };
+	if (timeOfDay < 0.25f) { // Day
+		for (int i = 0; i < 3; ++i) {
+			lightColor[i] = dayColor[i];
+		}
+	}
+	else if (timeOfDay < 0.5f) { // Day to Sunset
+		float t = (timeOfDay - 0.25f) / 0.25f;
+		for (int i = 0; i < 3; ++i) {
+			lightColor[i] = Lerp(dayColor[i], sunsetColor[i], t);
+		}
+	}
+	else if (timeOfDay < 0.75f) { // Sunset to Night
+		float t = (timeOfDay - 0.5f) / 0.25f;
+		for (int i = 0; i < 3; ++i) {
+			lightColor[i] = Lerp(sunsetColor[i], nightColor[i], t);
+		}
+	}
+	else { // Night
+		for (int i = 0; i < 3; ++i) {
+			lightColor[i] = nightColor[i];
+		}
+	}
+	lightColor[3] = 1.0f;
+}
+
 void DisplaySceneOne()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	GLfloat lightIntensity[4];
+	UpdateLightColor(timeElapsed, lightIntensity);
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
@@ -333,10 +369,12 @@ void DisplaySceneOne()
 void DisplaySceneTwo(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
+	GLfloat lightIntensity[4];
+	UpdateLightColor(timeElapsed, lightIntensity);
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
 
 	if (winGame)
 	{
@@ -406,7 +444,8 @@ void DisplaySceneTwo(void) {
 	glPopMatrix();
 
 	// car
-	RenderHeadlights();
+	if (renderLight)
+		RenderHeadlights();
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 
 	Render2DText(score);
@@ -462,7 +501,7 @@ void decrementTime(int value) {
 			if (tankCount <= 0) {
 				gameOver = true;
 			}
-			tankCount--;
+			tankCount-=2;
 		}
 
 		if (timeRemaining <= 0) {
@@ -995,31 +1034,26 @@ void InitLightSource()
 
 void RenderGround()
 {
-	glDisable(GL_LIGHTING);
+	// Set the ground color and enable textures, but do not affect lighting globally
+	glColor3f(0.6f, 0.6f, 0.6f);  // Set the color for the ground
+	glEnable(GL_TEXTURE_2D);      // Enable texture mapping
 
-	glColor3f(0.6, 0.6, 0.6);
-
-	glEnable(GL_TEXTURE_2D);
-
+	// Bind and render the ground texture
 	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);
-
 	glPushMatrix();
 	glBegin(GL_QUADS);
-	glNormal3f(0, 1, 0);
-	glTexCoord2f(0, 0);
-	glVertex3f(-20, 0, -20);
-	glTexCoord2f(5, 0);
-	glVertex3f(20, 0, -20);
-	glTexCoord2f(5, 5);
-	glVertex3f(20, 0, 20);
-	glTexCoord2f(0, 5);
-	glVertex3f(-20, 0, 20);
+	glNormal3f(0, 1, 0);  // Ground normal (flat surface)
+
+	// Define the texture coordinates and vertices
+	glTexCoord2f(0, 0); glVertex3f(-20, 0, -20);
+	glTexCoord2f(5, 0); glVertex3f(20, 0, -20);
+	glTexCoord2f(5, 5); glVertex3f(20, 0, 20);
+	glTexCoord2f(0, 5); glVertex3f(-20, 0, 20);
 	glEnd();
 	glPopMatrix();
 
-	glEnable(GL_LIGHTING);
-
-	glColor3f(1, 1, 1);
+	// Reset the color after ground rendering
+	glColor3f(1.0f, 1.0f, 1.0f);  // Reset the color back to white
 }
 
 void InitMaterial()
@@ -1200,7 +1234,14 @@ void Render2DText(int score) {
 		for (char c : scoreText) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
 		}
-
+		if (currentScene == scene1) {
+			glColor3f(1.0f, 0.0f, 0.0f);
+			glRasterPos2f(250.0f, 580.0f);
+			std::string text = "Collect 10 gas tanks or more to support you in the countryside.";
+			for (char c : text) {
+				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+			}
+		}
 		glColor3f(0.0f, 0.0f, 0.0f);
 		glRasterPos2f(50.0f, 500.0f);
 		std::string livesText = "Lives: " + std::to_string(static_cast<int>(lives));
