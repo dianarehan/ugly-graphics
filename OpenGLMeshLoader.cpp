@@ -101,6 +101,9 @@ Vector Eye(camX, camY, camZ);
 Vector At(0, 0, 0);
 Vector Up(0, 1, 0);
 int cameraZoom = 0;
+float camYaw = 0.0f, camPitch = -0.2f;
+enum View { FREE_VIEW, TOP_VIEW, SIDE_VIEW, FRONT_VIEW };
+View currentView = FREE_VIEW;
 #pragma endregion
 
 //game data
@@ -200,6 +203,7 @@ void DisplaySceneOne();
 void DisplaySceneTwo();
 void LoadScene2();
 void getColorBasedOnTime(float elapsedTime, float& r, float& g, float& b);
+void SetCamera();
 #pragma endregion
 
 //road data
@@ -297,7 +301,7 @@ void DisplaySceneOne()
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
-
+	SetCamera();
 	if (gameOver)
 	{
 		Render2DText(score);
@@ -375,7 +379,7 @@ void DisplaySceneTwo(void) {
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
-
+	SetCamera();
 	if (winGame)
 	{
 		Render2DText(score);
@@ -921,22 +925,87 @@ void myMouse(int button, int state, int x, int y)
 
 void myKeyboard(unsigned char button, int x, int y)
 {
+	const float turnSpeed = 0.05f;
 	switch (button)
 	{
-	case 'w':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		break;
-	case 'r':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
 	case '2':
 		renderLight = !renderLight;
+		break;
+	case 'w': //z positive
+		camX += moveSpeed * sin(camYaw);
+		camZ -= moveSpeed * cos(camYaw);
+		break;
+	case 's': //z negative
+		camX -= moveSpeed * sin(camYaw);
+		camZ += moveSpeed * cos(camYaw);
+		break;
+	case 'a': //x negative
+		camX -= moveSpeed * cos(camYaw);
+		camZ -= moveSpeed * sin(camYaw);
+		break;
+	case 'd': //x positive
+		camX += moveSpeed * cos(camYaw);
+		camZ += moveSpeed * sin(camYaw);
+		break;
+	case 'q': //y positive
+		camY += moveSpeed;
+		break;
+	case 'e': //y negative
+		camY -= moveSpeed;
+		break;
+	case 'j': //rotate on positive y
+		camYaw -= turnSpeed;
+		break;
+	case 'l': //rotate on negative y
+		camYaw += turnSpeed;
+		break;
+	case 'i': //rotate on positive x
+		camPitch += turnSpeed;
+		break;
+	case 'k': //rotate on negative x
+		camPitch -= turnSpeed;
+		break;
+	case 'f': //free view
+		currentView = FREE_VIEW;
+		break;
+	case 't': //top view
+		currentView = TOP_VIEW;
+		break;
+	case 'y': //side view
+		currentView = SIDE_VIEW;
+		break;
+	case 'u': //front view
+		currentView = FRONT_VIEW;
 		break;
 	default:
 		break;
 	}
 
 	glutPostRedisplay();
+}
+
+void SetCamera() {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(fovy, aspectRatio, zNear, zFar);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	switch (currentView) {
+	case FREE_VIEW:
+		gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+		break;
+	case TOP_VIEW:
+		gluLookAt(carPosition.x, carPosition.y + 50.0, carPosition.z, carPosition.x, carPosition.y, carPosition.z, 0.0, 0.0, -1.0);
+		break;
+	case SIDE_VIEW:
+		gluLookAt(carPosition.x + 50.0, carPosition.y, carPosition.z, carPosition.x, carPosition.y, carPosition.z, 0.0, 1.0, 0.0);
+		break;
+	case FRONT_VIEW:
+		gluLookAt(carPosition.x, carPosition.y+1.0f, carPosition.z + 50.0, carPosition.x, carPosition.y, carPosition.z, 0.0, 1.0, 0.0);
+		break;
+	}
 }
 
 void mySpecialKeyboard(int key, int x, int y)
