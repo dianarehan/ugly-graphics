@@ -120,7 +120,7 @@ float MAX_X = 10.0f;
 float moveSpeed = 15.0f;
 int timeRemaining = 60.0f;
 bool gamePaused = false;
-int tankCount = 0;
+int tankCount = 1;
 bool renderLight = true;
 #pragma endregion
 
@@ -255,13 +255,26 @@ void getColorBasedOnTime(float elapsedTime, float& r, float& g, float& b) {
 
 void DisplaySceneOne()
 {
-	if (gameOver) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
+	if (gameOver)
+	{
+		Render2DText(score);
+		backgroundSound->stop();
+		if (!hasPlayedLoseSound)
+		{
+			carSound->stop();
+			carSound = engine->play2D("sounds/lose.wav", true, false, true);
+			hasPlayedLoseSound = true;
+		}
+		glutSwapBuffers();
+		return;
+	}
 
 	float r, g, b;
 	getColorBasedOnTime(timeElapsed, r, g, b);
@@ -307,7 +320,7 @@ void DisplaySceneOne()
 	glPopMatrix();
 
 	// car model
-	if(renderLight)
+	if (renderLight)
 		RenderHeadlights();
 	DrawModel(model_car, carPosition, Vector(1.3f, 1.5f, 1.5f), Vector(0, 180, 0));
 	//DrawModelWithBoundingBox();
@@ -318,13 +331,39 @@ void DisplaySceneOne()
 }
 
 void DisplaySceneTwo(void) {
-	if (gameOver||winGame) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
 	GLfloat lightPosition[] = { 0.0f, 100.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
+	if (winGame)
+	{
+		Render2DText(score);
+		backgroundSound->stop();
+		if (!hasPlayedWinSound)
+		{
+			carSound->stop();
+			carSound = engine->play2D("sounds/cheering(win).wav", true, false, true);
+			hasPlayedWinSound = true;
+		}
+		glutSwapBuffers();
+		return;
+	}
+	else if (gameOver)
+	{
+		Render2DText(score);
+		backgroundSound->stop();
+		if (!hasPlayedLoseSound)
+		{
+			carSound->stop();
+			carSound = engine->play2D("sounds/lose.wav", true, false, true);
+			hasPlayedLoseSound = true;
+		}
+		glutSwapBuffers();
+		return;
+	}
 
 	float r, g, b;
 	getColorBasedOnTime(timeElapsed, r, g, b);
@@ -358,7 +397,7 @@ void DisplaySceneTwo(void) {
 
 	DrawSkyBox();
 
-	if (timeRemaining <= 4) {
+	if (timeRemaining <= 6) {
 		houseZPosition += moveSpeed * 0.08;
 		Vector housePosition = Vector(0, 0, houseZPosition);
 		DrawModel(model_house, housePosition, Vector(1, 1, 1), Vector(90, 0, 0));
@@ -410,30 +449,31 @@ void timer(int value) {
 }
 
 void decrementTime(int value) {
-	timeRemaining--;
+	if (timeRemaining >= 0 && !gameOver && !winGame) {
+		timeRemaining--;
 
-	if (timeRemaining == 30) {
-		currentScene = scene2;
-		tankCount = score / 10;
-		LoadScene2();
-	}
-
-	if (currentScene == scene2 && timeRemaining % 7 == 0) {
-		tankCount--;
-		if (tankCount == 0) {
-			gameOver = true;
+		if (timeRemaining == 30) {
+			currentScene = scene2;
+			tankCount = score / 10;
+			LoadScene2();
 		}
-	}
 
-	if (timeRemaining <= 0) {
-		winGame = true;
-		moveSpeed = 0;
-		carSound = engine->play2D("sounds/cheering(win).wav", true, false, true);
-		return;
-	}
+		if (currentScene == scene2 && timeRemaining % 7 == 0) {
+			if (tankCount <= 0) {
+				gameOver = true;
+			}
+			tankCount--;
+		}
 
-	glutPostRedisplay();
-	glutTimerFunc(1000, decrementTime, 0);
+		if (timeRemaining <= 0) {
+			winGame = true;
+			moveSpeed = 0;
+			return;
+		}
+
+		glutPostRedisplay();
+		glutTimerFunc(1000, decrementTime, 0);
+	}
 }
 
 void main(int argc, char** argv)
@@ -593,7 +633,7 @@ void DrawSigns() {
 void SpawnCollectables() {
 	Collectable newCollectable;
 
-	newCollectable.position = Vector((rand() % 21) - 10, 0, -SPAWN_DISTANCE);
+	newCollectable.position = Vector((rand() % 22) - 10, 0, -SPAWN_DISTANCE);
 
 	if (currentScene == scene1)
 		newCollectable.model = model_tank;
@@ -851,7 +891,7 @@ void myKeyboard(unsigned char button, int x, int y)
 	case 'r':
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		break;
-	case '2' :
+	case '2':
 		renderLight = !renderLight;
 		break;
 	default:
@@ -1124,12 +1164,24 @@ void Render2DText(int score) {
 	glLoadIdentity();
 
 	if (gameOver) {
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
-		char message[70];
-		sprintf(message, "Game Over :( You ran out of lives, with a score of %d", score);
-		for (char* c = message; *c != '\0'; c++) {
-			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+		if (tankCount <= 0) {
+			glColor3f(1.0f, 0.0f, 0.0f);
+			glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
+			char message[70];
+			sprintf(message, "Game Over :( no enough fuel to continue , with a score of %d", score);
+			for (char* c = message; *c != '\0'; c++) {
+				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+			}
+
+		}
+		else {
+			glColor3f(1.0f, 0.0f, 0.0f);
+			glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
+			char message[70];
+			sprintf(message, "Game Over :( You ran out of lives, with a score of %d", score);
+			for (char* c = message; *c != '\0'; c++) {
+				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+			}
 		}
 	}
 	else if (winGame) {
