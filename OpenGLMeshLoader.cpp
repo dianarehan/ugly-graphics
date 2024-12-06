@@ -353,8 +353,8 @@ void DisplaySceneOne()
 
 	if (timeRemaining <= 66) {
 		flagZPosition += moveSpeed * 0.08;
-		Vector flagPosition = Vector(0, -10, flagZPosition);
-		DrawModel(model_flag, flagPosition, Vector(1, 1, 1), Vector(0, 0, 0));
+		Vector flagPosition = Vector(0, 8, flagZPosition);
+		DrawModel(model_flag, flagPosition, Vector(0.3, 0.3, 0.3), Vector(0, 0, 0));
 	}
 
 	glPopMatrix();
@@ -439,7 +439,7 @@ void DisplaySceneTwo(void) {
 
 	DrawSkyBox();
 
-	if (timeRemaining <= 6) {
+	if (timeRemaining <= 4) {
 		houseZPosition += moveSpeed * 0.08;
 		Vector housePosition = Vector(0, 0, houseZPosition);
 		DrawModel(model_house, housePosition, Vector(1, 1, 1), Vector(90, 0, 0));
@@ -505,7 +505,7 @@ void decrementTime(int value) {
 			if (tankCount <= 0) {
 				gameOver = true;
 			}
-			tankCount-=2;
+			tankCount -= 2;
 		}
 
 		if (timeRemaining <= 0) {
@@ -900,22 +900,15 @@ bool isOverlapping(const Vector& newPosition) {
 void myMouse(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) { // Left mouse button pressed
-		glLoadIdentity();
 		if (cameraMode == thirdPerson) {
 			cameraMode = firstPerson;
-			Eye = Vector(carPosition.x, camY2, camZ2);
-			Vector At(carPosition.x, 0, 0);
-			Up = Vector(0, 1, 0);
-			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
 		else {
 			cameraMode = thirdPerson;
-			Vector Eye(camX, camY, camZ);
-			Vector At(0, 0, 0);
-			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
 	}
 }
+
 
 void myKeyboard(unsigned char button, int x, int y)
 {
@@ -959,16 +952,16 @@ void myKeyboard(unsigned char button, int x, int y)
 	case 'k': //rotate on negative x
 		camPitch -= turnSpeed;
 		break;
-	case 'f': //free view
+	case 'u': //free view
 		currentView = FREE_VIEW;
 		break;
 	case 't': //top view
 		currentView = TOP_VIEW;
 		break;
-	case 'y': //side view
+	case 'c': //side view
 		currentView = SIDE_VIEW;
 		break;
-	case 'u': //front view
+	case 'f': //front view
 		currentView = FRONT_VIEW;
 		break;
 	default:
@@ -995,8 +988,8 @@ void SetCamera() {
 			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
 		else {
-			Vector Eye(camX, camY, camZ);
-			Vector At(0, 0, 0);
+			Vector Eye(carPosition.x, camY, camZ);
+			Vector At(carPosition.x, 0, 0);
 			gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 		}
 		break;
@@ -1007,7 +1000,7 @@ void SetCamera() {
 		gluLookAt(carPosition.x + 50.0, carPosition.y, carPosition.z, carPosition.x, carPosition.y, carPosition.z, 0.0, 1.0, 0.0);
 		break;
 	case FRONT_VIEW:
-		gluLookAt(carPosition.x, carPosition.y+1.0f, carPosition.z + 50.0, carPosition.x, carPosition.y, carPosition.z, 0.0, 1.0, 0.0);
+		gluLookAt(carPosition.x, carPosition.y + 1.0f, carPosition.z + 50.0, carPosition.x, carPosition.y, carPosition.z, 0.0, 1.0, 0.0);
 		break;
 	}
 }
@@ -1028,22 +1021,11 @@ void mySpecialKeyboard(int key, int x, int y)
 		case GLUT_KEY_LEFT:
 			if (carPosition.x - moveAmount >= MIN_X) {
 				carPosition.x -= moveAmount;
-			}if (cameraMode == firstPerson) {
-				Eye.x = carPosition.x;
-				At.x = carPosition.x;
-				glLoadIdentity();
-				gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 			}
 			break;
 		case GLUT_KEY_RIGHT:
 			if (carPosition.x + moveAmount <= MAX_X) {
 				carPosition.x += moveAmount;
-			}
-			if (cameraMode == firstPerson) {
-				Eye.x = carPosition.x;
-				At.x = carPosition.x;
-				glLoadIdentity();
-				gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
 			}
 			break;
 		}
