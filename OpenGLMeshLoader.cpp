@@ -121,7 +121,7 @@ Vector carPosition(0, 0, 15);
 float MIN_X = -10.0f;
 float MAX_X = 10.0f;
 float moveSpeed = 15.0f;
-int timeRemaining = 60.0f;
+int timeRemaining = 120.0f;
 bool gamePaused = false;
 int tankCount = 1;
 bool renderLight = true;
@@ -209,7 +209,7 @@ void SetCamera();
 //road data
 #pragma region
 std::vector<float> roadSegments;
-const int NUM_ROAD_SEGMENTS = 10;
+const int NUM_ROAD_SEGMENTS = 12;
 const float ROAD_SEGMENT_LENGTH = 38.0f;
 const float SPAWN_DISTANCE2 = 100.0f;
 #pragma endregion
@@ -262,7 +262,7 @@ float Lerp(float start, float end, float t) {
 }
 
 void UpdateLightColor(float timeElapsed, GLfloat* lightColor) {
-	float timeOfDay = fmod(timeElapsed, 30) / 30;
+	float timeOfDay = fmod(timeElapsed, 60) / 60;
 
 	GLfloat dayColor[3] = { 1.0f, 1.0f, 1.0f };
 	GLfloat sunsetColor[3] = { 1.0f, 0.5f, 0.3f };
@@ -351,7 +351,7 @@ void DisplaySceneOne()
 	// flag at the end of the road
 
 
-	if (timeRemaining <= 36) {
+	if (timeRemaining <= 66) {
 		flagZPosition += moveSpeed * 0.08;
 		Vector flagPosition = Vector(0, -10, flagZPosition);
 		DrawModel(model_flag, flagPosition, Vector(1, 1, 1), Vector(0, 0, 0));
@@ -495,13 +495,13 @@ void decrementTime(int value) {
 	if (timeRemaining >= 0 && !gameOver && !winGame) {
 		timeRemaining--;
 
-		if (timeRemaining == 30) {
+		if (timeRemaining == 60) {
 			currentScene = scene2;
 			tankCount = score / 10;
 			LoadScene2();
 		}
 
-		if (currentScene == scene2 && timeRemaining % 7 == 0) {
+		if (currentScene == scene2 && timeRemaining % 4 == 0) {
 			if (tankCount <= 0) {
 				gameOver = true;
 			}
@@ -988,7 +988,7 @@ void SetCamera() {
 
 	switch (currentView) {
 	case FREE_VIEW:
-		if (cameraMode == thirdPerson) {
+		if (cameraMode == firstPerson) {
 			Eye = Vector(carPosition.x, camY2, camZ2);
 			Vector At(carPosition.x, 0, 0);
 			Up = Vector(0, 1, 0);
@@ -1309,7 +1309,7 @@ void Render2DText(int score) {
 		if (currentScene == scene1) {
 			glColor3f(1.0f, 0.0f, 0.0f);
 			glRasterPos2f(250.0f, 580.0f);
-			std::string text = "Collect 10 gas tanks or more to support you in the countryside.";
+			std::string text = "Collect 30 gas tanks or more to support you in the countryside.";
 			for (char c : text) {
 				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
 			}
