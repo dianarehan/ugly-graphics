@@ -810,23 +810,23 @@ void RenderHeadlights() {
 	GLfloat lightSpecular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	glPushMatrix();
-	glTranslatef(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
 
 	//left headlight light source
-	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 20.0f, 1.0f };  // Homogeneous coordinates
+	GLfloat leftLightPosition[] = { carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 4.5f, 1.0f };  // Homogeneous coordinates
 	glLightfv(GL_LIGHT2, GL_POSITION, leftLightPosition);
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT2, GL_AMBIENT, lightAmbient);
 	glLightfv(GL_LIGHT2, GL_SPECULAR, lightSpecular);
 	const GLfloat CONSTANT_ATTENUATION = 0.8f;
 	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, CONSTANT_ATTENUATION);
-	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.05f);
+	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.02f);
 	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.02f);
 
 	glEnable(GL_LIGHT2);
 
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 0.8f);
+	glTranslatef(carPosition.x - 1.0f, carPosition.y + 1.0f, carPosition.z - 12.0f);
 	glutSolidSphere(0.1, 10, 10);
 	glEnable(GL_LIGHTING);
 
@@ -834,18 +834,17 @@ void RenderHeadlights() {
 
 	//Right headlight
 	glPushMatrix();
-	glTranslatef(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
 
 	// Set the position and properties for the right headlight light source
-	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 20.0f, 1.0f };  // Homogeneous coordinates
+	GLfloat rightLightPosition[] = { carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 4.5f, 1.0f };  // Homogeneous coordinates
 	glLightfv(GL_LIGHT1, GL_POSITION, rightLightPosition);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
 	glLightfv(GL_LIGHT1, GL_SPECULAR, lightSpecular);
 	const GLfloat CONSTANT_ATTENUATION2 = 0.8f;
 	glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, CONSTANT_ATTENUATION2);
-	glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.2f);
-	glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.2f);
+	glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.02f);
+	glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.02f);
 
 	glEnable(GL_LIGHT1);
 
@@ -859,7 +858,7 @@ void RenderHeadlights() {
 	// Render visual spheres for headlights
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 0.8f);
-	glutSolidSphere(0.1, 10, 10);
+	glTranslatef(carPosition.x + 1.0f, carPosition.y + 1.0f, carPosition.z - 3.5f);
 	glutSolidSphere(0.1, 10, 10);
 	glEnable(GL_LIGHTING);
 	glPopMatrix();
@@ -1202,7 +1201,7 @@ void Render2DText(int score) {
 			glColor3f(1.0f, 0.0f, 0.0f);
 			glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
 			char message[70];
-			sprintf(message, "Game Over :( no enough fuel to continue , with a score of %d", score);
+			sprintf(message, "Game Over , with a score of %d no enough fuel to continue :(", score);
 			for (char* c = message; *c != '\0'; c++) {
 				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 			}
@@ -1212,7 +1211,7 @@ void Render2DText(int score) {
 			glColor3f(1.0f, 0.0f, 0.0f);
 			glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
 			char message[70];
-			sprintf(message, "Game Over :( You ran out of lives, with a score of %d", score);
+			sprintf(message, "Game Over, with a score of %d  You ran out of lives :(", score);
 			for (char* c = message; *c != '\0'; c++) {
 				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 			}
@@ -1222,7 +1221,7 @@ void Render2DText(int score) {
 		glColor3f(0.1137f, 0.6118f, 0.0980f);
 		glRasterPos2f(xCord / 2.0 - 370, yCord / 2.5);
 		char message[50];
-		sprintf(message, "Game Win!! with a final score % d", score);
+		sprintf(message, "Game Win :D !! with a final score % d", score);
 		for (char* c = message; *c != '\0'; c++) {
 			glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
 		}
